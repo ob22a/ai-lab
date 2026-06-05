@@ -2,6 +2,7 @@ import pygame
 
 from visualization.Visualizer import Visualizer
 from search.SearchAlgorithm import SearchStatus
+from core.node import Node
 from core.utils import reconstruct_path
 
 
@@ -237,6 +238,9 @@ class MazeSearchVisualizer(Visualizer):
 
                 if event.key == pygame.K_ESCAPE:
                     self.running = False
+                
+                elif self.solver.status == SearchStatus.SUCCESS:
+                    self.restart()
 
                 elif event.key == pygame.K_SPACE:
 
@@ -260,7 +264,23 @@ class MazeSearchVisualizer(Visualizer):
             self.solver.search_step()
 
     def restart(self):
-        pass
+        self.solver.frontier = [
+            Node(
+                state=self.solver.problem.start,
+                parent=None,
+                action=None,
+                path_cost=0
+            )
+        ]
+
+        self.solver.frontier_states = {
+            self.solver.problem.start
+        }
+
+        self.solver.explored = set()
+        self.solver.current_node = self.solver.frontier[0]
+        self.solver.solution_node = None
+        self.solver.status = SearchStatus.RUNNING
     
     def run(self):
 

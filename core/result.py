@@ -18,3 +18,14 @@ class Result:
     max_frontier_size: int = 0
 
     metadata: dict[str, Any] = field(default_factory=dict)
+
+    def __str__(self):
+        return (
+            f"\nSuccess: {self.success}\n"
+            f"Runtime: {self.runtime:.5f}s\n"
+            f"Nodes expanded: {self.nodes_expanded}\n"
+            f"Nodes generated: {self.nodes_generated}\n"
+            f"Solution depth: {self.solution_depth}\n"
+            f"Path cost: {self.path_cost}\n"
+            f"Max frontier size: {self.max_frontier_size}"
+        )

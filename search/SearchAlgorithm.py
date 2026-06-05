@@ -1,5 +1,7 @@
+import time
 from abc import ABC, abstractmethod
 from enum import Enum, auto
+from core.result import Result
 
 class SearchStatus(Enum):
     RUNNING = auto()
@@ -29,3 +31,32 @@ class SearchAlgorithm(ABC):
     @property
     def failed(self):
       return self.status == SearchStatus.FAILURE
+    
+    def run(self):
+
+        start_time = time.time()
+
+        while self.status == SearchStatus.RUNNING:
+            self.search_step()
+
+        end_time = time.time()
+
+        return Result(
+            success=self.status == SearchStatus.SUCCESS,
+            solution=self.solution_node,
+            runtime=end_time - start_time,
+            nodes_expanded=getattr(self, "nodes_expanded", 0),
+            nodes_generated=getattr(self, "nodes_generated", 0),
+            path_cost=(
+                self.solution_node.path_cost
+                if self.solution_node else 0
+            ),
+            solution_depth=(
+                self.solution_node.depth
+                if self.solution_node else 0
+            ),
+            max_frontier_size=getattr(
+                self, "max_frontier_size", 0
+            ),
+            metadata={}
+        )

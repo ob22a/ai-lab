@@ -5,14 +5,14 @@ from visualization.MazeVisualizer import MazeSearchVisualizer
 
 if __name__ == "__main__":
     maze = RandomizedKruskalGenerator(
-        20,
-        20
+        50,
+        50
     ).generate()
 
     problem = MazeSearchProblem(
         maze,
         (0, 0),
-        (19, 19)
+        (49, 49)
     )
 
     solver = DFS(problem)
@@ -20,8 +20,13 @@ if __name__ == "__main__":
     visualizer = MazeSearchVisualizer(
         maze,
         solver,
-        cell_size=30,
+        cell_size=20,
         auto_run=True
     )
 
     visualizer.run()
+
+    # For benchmark recording
+
+    result = solver.run()
+    print(result)

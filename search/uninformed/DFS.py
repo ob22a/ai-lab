@@ -21,6 +21,10 @@ class DFS(SearchAlgorithm):
         self.explored = set()
         self.current_node = self.frontier[0]
 
+        self.nodes_expanded = 0
+        self.nodes_generated = 0
+        self.max_frontier_size = 1
+
     def search_step(self):
         if not self.frontier:
             self.status=SearchStatus.FAILURE
@@ -31,6 +35,7 @@ class DFS(SearchAlgorithm):
         self.frontier_states.remove(
             node.state
         )
+        self.nodes_expanded += 1
 
         if self.problem.is_goal_state(node.state):
             self.solution_node = node
@@ -57,6 +62,12 @@ class DFS(SearchAlgorithm):
                 self.frontier.append(child)
                 self.frontier_states.add(
                     child_state
+                )
+                self.nodes_generated += 1
+                
+                self.max_frontier_size = max(
+                    self.max_frontier_size,
+                    len(self.frontier)
                 )
 
         return False

@@ -1,6 +1,4 @@
 from abc import ABC, abstractmethod
-from domains.maze.RandomizedKruskal import RandomizedKruskalGenerator
-from typing import Tuple
 
 class SearchProblem(ABC):
     def __init__(self, start, goal):
