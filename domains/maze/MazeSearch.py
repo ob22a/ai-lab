@@ -1,4 +1,3 @@
-from RandomizedKruskal import RandomizedKruskalGenerator
 from core.problem import SearchProblem
 from enum import Enum, auto
 from typing import Tuple
@@ -11,12 +10,13 @@ class Moves(Enum):
 
 
 class MazeSearchProblem(SearchProblem):
-  def __init__(self, start:Tuple[int,int], goal:Tuple[int,int],size:Tuple[int,int]):
+  def __init__(self, maze, start:Tuple[int,int], goal:Tuple[int,int]):
     super().__init__(start, goal)
-    self.size=size
-
-    generator = RandomizedKruskalGenerator(size[0], size[1])
-    self.maze = generator.generate()
+    self.size = (
+      maze.rows,
+      maze.cols
+    )
+    self.maze = maze
   
   def get_actions(self, state:Tuple[int,int]) -> list[Moves]:
     # All the moves from this cell

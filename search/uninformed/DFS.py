@@ -1,8 +1,10 @@
 from core.node import Node
+from search.SearchAlgorithm import SearchAlgorithm, SearchStatus
+from core.problem import SearchProblem
 
-class DFS:
-    def __init__(self, problem):
-        self.problem = problem
+class DFS(SearchAlgorithm):
+    def __init__(self, problem:SearchProblem):
+        super().__init__(problem)
 
         self.frontier = [
             Node(
@@ -12,16 +14,28 @@ class DFS:
                 path_cost=0
             )
         ]
+        self.frontier_states = {
+            problem.start
+        }
 
         self.explored = set()
+        self.current_node = self.frontier[0]
 
     def search_step(self):
         if not self.frontier:
+            self.status=SearchStatus.FAILURE
             return None
 
         node = self.frontier.pop()
+        self.current_node = node
+        self.frontier_states.remove(
+            node.state
+        )
 
         if self.problem.is_goal_state(node.state):
+            self.solution_node = node
+            self.status=SearchStatus.SUCCESS
+
             return node
 
         self.explored.add(node.state)
@@ -32,7 +46,7 @@ class DFS:
                 action
             )
 
-            if child_state not in self.explored:
+            if child_state not in self.explored  and child_state not in self.frontier_states:
                 child = Node(
                     state=child_state,
                     parent=node,
@@ -41,6 +55,9 @@ class DFS:
                 )
 
                 self.frontier.append(child)
+                self.frontier_states.add(
+                    child_state
+                )
 
         return False
     

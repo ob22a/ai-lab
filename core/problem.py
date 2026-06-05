@@ -18,6 +18,5 @@ class SearchProblem(ABC):
     def get_result(self, state, action):
         pass
 
-    @abstractmethod
     def get_cost(self, state, action, next_state)->float:
         return 1
