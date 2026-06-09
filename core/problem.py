@@ -18,3 +18,6 @@ class SearchProblem(ABC):
 
     def get_cost(self, state, action, next_state)->float:
         return 1
+    
+    def heuristic(self,state)->float:
+        pass

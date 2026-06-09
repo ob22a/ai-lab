@@ -1,5 +1,5 @@
 from domains.maze.MazeSearch import MazeSearchProblem
-from search.uninformed.IDDFS import OptimizedIDDFS,TrueIDDFS
+from search.informed.GBFS import GreedyBestFirstSearch
 from domains.maze.RandomizedKruskal import RandomizedKruskalGenerator
 from visualization.MazeVisualizer import MazeSearchVisualizer
 
@@ -15,19 +15,18 @@ if __name__ == "__main__":
         (19, 19)
     )
 
-    solver = TrueIDDFS(problem,5)
+    solver = GreedyBestFirstSearch(problem)
 
     visualizer = MazeSearchVisualizer(
         maze,
         solver,
-        cell_size=30,
-        auto_run=True
+        cell_size=30
     )
 
     visualizer.run()
 
     # For benchmark recording
-    benchmark_solver = TrueIDDFS(problem,5,visualize=False)
+    benchmark_solver = GreedyBestFirstSearch(problem)
 
     result = benchmark_solver.run()
     print(result)

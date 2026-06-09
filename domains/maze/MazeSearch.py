@@ -59,3 +59,6 @@ class MazeSearchProblem(SearchProblem):
           raise IndexError('Can not move right at the last column')
         return (state[0],state[1]+1)
   
+  def heuristic(self,state:Tuple[int,int])->int:
+    # Manhatten distance
+    return abs(state[0]-self.goal[0])+abs(state[1]-self.goal[1])

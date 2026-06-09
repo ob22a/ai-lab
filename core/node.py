@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Optional
 
-@dataclass
+@dataclass(order=True)
 class Node:
     state: tuple[int, int]
     parent: Optional["Node"]
