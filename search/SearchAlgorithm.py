@@ -20,6 +20,10 @@ class SearchAlgorithm(ABC):
         self.solution_node = None
         self.status = SearchStatus.RUNNING
 
+        self.nodes_expanded = 0
+        self.nodes_generated = 0
+        self.max_frontier_size = 1
+
     @abstractmethod
     def search_step(self):
         pass
@@ -32,7 +36,8 @@ class SearchAlgorithm(ABC):
     def failed(self):
       return self.status == SearchStatus.FAILURE
     
-    def run(self):
+    def run(self,metadata={}):
+        self.reset()
 
         start_time = time.time()
 
@@ -58,5 +63,17 @@ class SearchAlgorithm(ABC):
             max_frontier_size=getattr(
                 self, "max_frontier_size", 0
             ),
-            metadata={}
+            metadata=metadata
         )
+
+    def reset(self):
+        self.frontier=[]        
+        self.explored=set()
+        
+        self.current_node = None
+        self.solution_node = None
+        self.status = SearchStatus.RUNNING
+
+        self.nodes_expanded = 0
+        self.nodes_generated = 0
+        self.max_frontier_size = 1

@@ -23,8 +23,6 @@ class MazeSearchVisualizer(Visualizer):
         self.maze = maze
         self.solver = solver
 
-        self.initial_frontier: Deque|list = copy.deepcopy(self.solver.frontier) # Used later for reseting
-
         self.cell_size = cell_size
         self.fps = fps
         self.auto_run = auto_run
@@ -270,16 +268,7 @@ class MazeSearchVisualizer(Visualizer):
             self.solver.search_step()
 
     def restart(self):
-        self.solver.frontier = self.initial_frontier
-
-        self.solver.frontier_states = {
-            self.solver.problem.start
-        }
-
-        self.solver.explored = set()
-        self.solver.current_node = self.solver.frontier[0]
-        self.solver.solution_node = None
-        self.solver.status = SearchStatus.RUNNING
+        self.solver.reset()
     
     def run(self):
 

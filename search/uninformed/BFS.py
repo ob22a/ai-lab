@@ -23,10 +23,6 @@ class BFS(SearchAlgorithm):
 
     self.explored = set()
     self.current_node = self.frontier[0]
-
-    self.nodes_expanded = 0
-    self.nodes_generated = 0
-    self.max_frontier_size = 1
   
   def search_step(self):
     if not self.frontier:
@@ -74,3 +70,18 @@ class BFS(SearchAlgorithm):
         )
     
     return False
+  
+  def reset(self):
+    super().reset()
+    self.frontier=deque([
+      Node(
+          state=self.problem.start,
+          parent=None,
+          action=None,
+          path_cost=0
+      )
+    ])
+    self.current_node=self.frontier[0]
+    self.frontier_states={
+      self.problem.start
+    }

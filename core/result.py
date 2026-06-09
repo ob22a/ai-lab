@@ -27,5 +27,6 @@ class Result:
             f"Nodes generated: {self.nodes_generated}\n"
             f"Solution depth: {self.solution_depth}\n"
             f"Path cost: {self.path_cost}\n"
-            f"Max frontier size: {self.max_frontier_size}"
+            f"Max frontier size: {self.max_frontier_size}\n"
+            f"Metadata: {self.metadata}"
         )

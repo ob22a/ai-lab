@@ -5,6 +5,7 @@ from core.problem import SearchProblem
 class DFS(SearchAlgorithm):
     def __init__(self, problem:SearchProblem):
         super().__init__(problem)
+        self.problem=problem
 
         self.frontier = [
             Node(
@@ -20,10 +21,6 @@ class DFS(SearchAlgorithm):
 
         self.explored = set()
         self.current_node = self.frontier[0]
-
-        self.nodes_expanded = 0
-        self.nodes_generated = 0
-        self.max_frontier_size = 1
 
     def search_step(self):
         if not self.frontier:
@@ -72,3 +69,17 @@ class DFS(SearchAlgorithm):
 
         return False
     
+    def reset(self):
+        super().reset()
+        self.frontier=[
+            Node(
+                state=self.problem.start,
+                parent=None,
+                action=None,
+                path_cost=0
+            )
+        ]
+        self.current_node=self.frontier[0]
+        self.frontier_states={
+            self.problem.start
+        }
