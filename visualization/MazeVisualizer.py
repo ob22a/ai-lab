@@ -249,8 +249,8 @@ class MazeSearchVisualizer(Visualizer):
                 elif event.key == pygame.K_SPACE:
 
                     if (
-                        self.solver.status
-                        == SearchStatus.RUNNING
+                        self.solver.status==SearchStatus.RUNNING 
+                        or self.solver.status==SearchStatus.DEPTH_EXCEEDED
                     ):
                         self.solver.search_step()
 
@@ -262,8 +262,9 @@ class MazeSearchVisualizer(Visualizer):
 
         if (
             self.auto_run
-            and self.solver.status
-            == SearchStatus.RUNNING
+            and (self.solver.status
+            == SearchStatus.RUNNING 
+            or self.solver.status==SearchStatus.DEPTH_EXCEEDED)
         ):
             self.solver.search_step()
 

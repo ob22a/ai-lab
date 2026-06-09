@@ -7,6 +7,7 @@ class SearchStatus(Enum):
     RUNNING = auto()
     SUCCESS = auto()
     FAILURE = auto()
+    DEPTH_EXCEEDED = auto()
 
 class SearchAlgorithm(ABC):
 
@@ -35,6 +36,10 @@ class SearchAlgorithm(ABC):
     @property
     def failed(self):
       return self.status == SearchStatus.FAILURE
+    
+    @property
+    def depth_exceeded(self):
+        return self.search_step==SearchStatus.DEPTH_EXCEEDED
     
     def run(self,metadata={}):
         self.reset()

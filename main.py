@@ -1,5 +1,5 @@
 from domains.maze.MazeSearch import MazeSearchProblem
-from search.uninformed.IDDFS import OptimizedIDDFS
+from search.uninformed.IDDFS import OptimizedIDDFS,TrueIDDFS
 from domains.maze.RandomizedKruskal import RandomizedKruskalGenerator
 from visualization.MazeVisualizer import MazeSearchVisualizer
 
@@ -15,7 +15,7 @@ if __name__ == "__main__":
         (19, 19)
     )
 
-    solver = OptimizedIDDFS(problem)
+    solver = TrueIDDFS(problem,5)
 
     visualizer = MazeSearchVisualizer(
         maze,
@@ -27,7 +27,7 @@ if __name__ == "__main__":
     visualizer.run()
 
     # For benchmark recording
-    benchmark_solver = OptimizedIDDFS(problem,visualize=False)
+    benchmark_solver = TrueIDDFS(problem,5,visualize=False)
 
     result = benchmark_solver.run()
     print(result)
