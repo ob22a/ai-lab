@@ -1,9 +1,13 @@
 import pygame
+import copy
+from typing import Deque
 
 from visualization.Visualizer import Visualizer
 from search.SearchAlgorithm import SearchStatus
 from core.node import Node
 from core.utils import reconstruct_path
+
+from search.SearchAlgorithm import SearchAlgorithm
 
 
 class MazeSearchVisualizer(Visualizer):
@@ -11,13 +15,15 @@ class MazeSearchVisualizer(Visualizer):
     def __init__(
         self,
         maze,
-        solver,
+        solver:SearchAlgorithm,
         cell_size=30,
         fps=60,
         auto_run=False
     ):
         self.maze = maze
         self.solver = solver
+
+        self.initial_frontier: Deque|list = copy.deepcopy(self.solver.frontier) # Used later for reseting
 
         self.cell_size = cell_size
         self.fps = fps
@@ -264,14 +270,7 @@ class MazeSearchVisualizer(Visualizer):
             self.solver.search_step()
 
     def restart(self):
-        self.solver.frontier = [
-            Node(
-                state=self.solver.problem.start,
-                parent=None,
-                action=None,
-                path_cost=0
-            )
-        ]
+        self.solver.frontier = self.initial_frontier
 
         self.solver.frontier_states = {
             self.solver.problem.start

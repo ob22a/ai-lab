@@ -1,26 +1,26 @@
 from domains.maze.MazeSearch import MazeSearchProblem
-from search.uninformed.DFS import DFS
+from search.uninformed.BFS import BFS
 from domains.maze.RandomizedKruskal import RandomizedKruskalGenerator
 from visualization.MazeVisualizer import MazeSearchVisualizer
 
 if __name__ == "__main__":
     maze = RandomizedKruskalGenerator(
-        50,
-        50
+        20,
+        20
     ).generate()
 
     problem = MazeSearchProblem(
         maze,
         (0, 0),
-        (49, 49)
+        (19, 19)
     )
 
-    solver = DFS(problem)
+    solver = BFS(problem)
 
     visualizer = MazeSearchVisualizer(
         maze,
         solver,
-        cell_size=20,
+        cell_size=30,
         auto_run=True
     )
 
