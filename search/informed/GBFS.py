@@ -84,7 +84,7 @@ class GreedyBestFirstSearch(SearchAlgorithm):
       )
     ]
 
-    self.current_node=self.frontier[0]
+    # self.current_node=self.frontier[0] This doesn't matter because right after we reset current node gets assigned from the popped value
     self.frontier_states={
       self.problem.start
     }

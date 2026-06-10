@@ -1,6 +1,6 @@
 from core.problem import SearchProblem
 from enum import Enum, auto
-from typing import Tuple
+from typing import Tuple, Literal
 
 class Moves(Enum):
   UP = auto()
@@ -10,13 +10,14 @@ class Moves(Enum):
 
 
 class MazeSearchProblem(SearchProblem):
-  def __init__(self, maze, start:Tuple[int,int], goal:Tuple[int,int]):
+  def __init__(self, maze, start:Tuple[int,int], goal:Tuple[int,int], heuristic_type:Literal["Manhatten","Euclidean"]="Manhatten"):
     super().__init__(start, goal)
     self.size = (
       maze.rows,
       maze.cols
     )
     self.maze = maze
+    self.heuristic_type = heuristic_type
   
   def get_actions(self, state:Tuple[int,int]) -> list[Moves]:
     # All the moves from this cell
@@ -61,4 +62,8 @@ class MazeSearchProblem(SearchProblem):
   
   def heuristic(self,state:Tuple[int,int])->int:
     # Manhatten distance
-    return abs(state[0]-self.goal[0])+abs(state[1]-self.goal[1])
+    if self.heuristic_type=="Manhatten":
+      return abs(state[0]-self.goal[0])+abs(state[1]-self.goal[1])
+    
+    # Euclidean distance
+    return (state[0]-self.goal[0])**2+(state[1]-self.goal[1])**2

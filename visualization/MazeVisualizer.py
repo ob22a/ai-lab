@@ -44,8 +44,6 @@ class MazeSearchVisualizer(Visualizer):
             "goal": (255, 0, 255),
 
             "wall": (0, 0, 0),
-
-            "text": (0, 0, 0)
         }
 
         self.show_frontier = True
