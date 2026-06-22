@@ -9,6 +9,7 @@ class AStar(SearchAlgorithm):
   def __init__(self, problem: SearchProblem):
     super().__init__(problem)
 
+    self.problem=problem
     start_node = Node(
       state=problem.start,
       parent=None,
@@ -65,7 +66,7 @@ class AStar(SearchAlgorithm):
       )
 
       # g(n)
-      new_cost = node.path_cost + 1
+      new_cost = node.path_cost + self.problem.get_cost(node,action,child_state)
 
       if (
         child_state not in self.best_cost

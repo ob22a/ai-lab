@@ -8,6 +8,7 @@ class GreedyBestFirstSearch(SearchAlgorithm):
   def __init__(self, problem:SearchProblem):
     super().__init__(problem)
 
+    self.problem=problem
     self.frontier = [
       (0,
         Node(
@@ -47,11 +48,13 @@ class GreedyBestFirstSearch(SearchAlgorithm):
       child_state = self.problem.get_result(node.state,action)
       
       if child_state not in self.explored and child_state not in self.frontier_states:
+        step_cost = self.problem.get_cost(node,action,child_state)
+
         child = Node(
           state=child_state,
           parent=node,
           action=action,
-          path_cost=node.path_cost + 1
+          path_cost=node.path_cost + step_cost
         )
 
         heuristic = self.problem.heuristic(child_state)
