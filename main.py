@@ -1,5 +1,5 @@
 from domains.maze.MazeSearch import MazeSearchProblem
-from search.uninformed.UCS import UCS
+from search.informed.AStar import AStar
 from domains.maze.RandomizedKruskal import RandomizedKruskalGenerator
 from visualization.MazeVisualizer import MazeSearchVisualizer
 
@@ -15,7 +15,7 @@ if __name__ == "__main__":
         (19, 19)
     )
 
-    solver = UCS(problem)
+    solver = AStar(problem)
 
     visualizer = MazeSearchVisualizer(
         maze,
@@ -27,7 +27,26 @@ if __name__ == "__main__":
     visualizer.run()
 
     # For benchmark recording
-    benchmark_solver = UCS(problem)
+    benchmark_solver = AStar(problem)
+
+    result = benchmark_solver.run()
+    print(result)
+    print("="*80)
+
+    # Second run to compare the euclidean and manhatten
+    solver.reset()
+    solver.problem.heuristic_type="Euclidean"
+
+    second_visualizer = MazeSearchVisualizer(
+        maze,
+        solver,
+        cell_size=30,
+        auto_run=True
+    )
+    
+    second_visualizer.run()
+
+    benchmark_solver = AStar(problem)
 
     result = benchmark_solver.run()
     print(result)

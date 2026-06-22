@@ -41,7 +41,9 @@ class SearchAlgorithm(ABC):
     def depth_exceeded(self):
         return self.search_step==SearchStatus.DEPTH_EXCEEDED
     
-    def run(self,metadata={}):
+    def run(self,metadata=None):
+        if metadata is None:
+            metadata = {}
         self.reset()
 
         start_time = time.time()
@@ -72,8 +74,8 @@ class SearchAlgorithm(ABC):
         )
 
     def reset(self):
-        self.frontier=[]        
-        self.explored=set()
+        self.frontier = []
+        self.explored = set()
         
         self.current_node = None
         self.solution_node = None

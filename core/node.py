@@ -1,13 +1,21 @@
-from dataclasses import dataclass,field
-from typing import Optional
+from dataclasses import dataclass
+from typing import Optional, Any
+import itertools
 
-@dataclass(order=True)
+_counter = itertools.count()
+
+@dataclass
 class Node:
-    path_cost: float # This makes comparison based on path cost first 
+    state: Any
+    parent: Optional["Node"] = None
+    action: Optional[Any] = None
+    path_cost: float = 0.0
     
-    state: tuple[int, int] = field(compare=False)
-    parent: Optional["Node"] = field(compare=False)
-    action: Optional[object] = field(compare=False)
+    def __post_init__(self):
+        self._id = next(_counter)
+        
+    def __lt__(self, other):
+        return self._id < other._id
     
     @property
     def depth(self):
