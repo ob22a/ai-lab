@@ -270,6 +270,8 @@ class MazeSearchVisualizer(Visualizer):
         self.solver.reset()
     
     def run(self):
+        # Restart at the start to ensure the solver is in a clean state
+        self.restart()
 
         while self.running:
 

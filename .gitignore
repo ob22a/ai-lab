@@ -1,1 +1,6 @@
 __pycache__
+/pdbs/*.bin
+
+# IDE files
+.vscode
+.idea

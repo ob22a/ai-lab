@@ -23,8 +23,12 @@ class AStar(SearchAlgorithm):
         
         self.current_node = self.frontier[0][1]
 
+        self._heuristic_cache = {}
+
     def reset(self):
         super().reset()
+        self._heuristic_cache.clear()
+        
         start_node = Node(
             state=self.problem.start,
             parent=None,
@@ -81,7 +85,12 @@ class AStar(SearchAlgorithm):
                 path_cost=new_path_cost
             )
 
-            h_cost = self.problem.heuristic(child_state)
+            h_cost = self._heuristic_cache.get(child_state)
+
+            if h_cost is None:
+                h_cost = self.problem.heuristic(child_state)
+                self._heuristic_cache[child_state] = h_cost
+
             # A* uses f(n) = g(n) + h(n)
             f_cost = new_path_cost + h_cost
 
