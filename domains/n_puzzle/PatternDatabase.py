@@ -18,14 +18,24 @@ class PatternDatabase:
             raise FileNotFoundError(f"PDB file not found: {filename}")
 
         with open(filename, "rb") as f:
+            # num_targets equals k + 1 (targets + blank tile)
             num_targets = int.from_bytes(f.read(1), byteorder="big")
-            target_bytes = f.read(num_targets)
+            
+            # FIX: Only read the k target bytes (num_targets - 1) written by the generator
+            target_bytes = f.read(num_targets - 1)
+            
+            # Reconstruct the explicit target tile list
             self.target_chars_ordered = [hex(b)[2:] for b in target_bytes]
-            self.target_index = {c: i for i, c in enumerate(self.target_chars_ordered)}
-            self.num_targets = num_targets
-            raw_data = f.read()
+            
+            # REPLICATE GENERATOR TRACKING LAYOUT: Append the blank tile '0' back to the list
+            self.tracked_elements = self.target_chars_ordered + ["0"]
+            self.target_index = {c: i for i, c in enumerate(self.tracked_elements)}
+            
+            self.num_targets = num_targets  # Perfectly preserves the total (k + 1) dimensions
+            raw_data = f.read()  # No longer missing its first byte!
 
         self.costs = array.array("b", raw_data)
+        
         # Fast tile-char -> slot lookup (0..15 puzzle indices)
         self._tile_slot = [-1] * 16
         for char, slot in self.target_index.items():
@@ -33,8 +43,8 @@ class PatternDatabase:
 
         if verbose:
             print(
-                f"Loaded {len(self.costs)} patterns ({len(self.costs) / 1024:.1f} KB) "
-                f"for tiles {self.target_chars_ordered}."
+                f"Loaded {len(self.costs):,} patterns ({len(self.costs) / (1024 * 1024):.2f} MB) "
+                f"for tiles {self.target_chars_ordered} + [blank]."
             )
 
     def _get_rank(self, positions: list, n: int) -> int:
@@ -52,7 +62,7 @@ class PatternDatabase:
         positions = [0] * self.num_targets
         tile_slot = self._tile_slot
         for idx, char in enumerate(state):
-            slot = tile_slot[int(char, 16)]
+            slot = tile_slot[int(char, 16) if isinstance(char, str) else int(char)]
             if slot >= 0:
                 positions[slot] = idx
         return self.costs[self._get_rank(positions, n)]
