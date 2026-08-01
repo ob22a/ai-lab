@@ -5,6 +5,7 @@ from search.informed.IDAStar import IDAStar
 from search.informed.AStar import AStar
 from visualization.NPuzzleVisualizer import NPuzzleVisualizer
 from domains.n_puzzle.PatternDatabase import PatternDatabase
+from domains.n_puzzle.utils import print_puzzle
 
 import copy
 
@@ -17,6 +18,10 @@ def main():
     # Generate a random state
     start_state = generator.generate()
     print(f"Generated Start State: {start_state}")
+    print_puzzle(start_state, size)
+
+    print("Goal State:")
+    print_puzzle(puzzle.goal_state, size)
 
     # pattern dbs
     pdb_15puzzle = [PatternDatabase("./pdbs/15puzzle_12345.bin"),PatternDatabase('./pdbs/15puzzle_6789a.bin'),PatternDatabase('./pdbs/15puzzle_bcdef.bin')]
