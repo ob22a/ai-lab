@@ -19,5 +19,16 @@ class SearchProblem(ABC):
     def get_cost(self, state, action, next_state)->float:
         return 1
     
-    def heuristic(self,state)->float:
+    def heuristic(self, state) -> float:
+        """Forward heuristic: estimated cost from `state` to the goal."""
         pass
+
+    def reverse_heuristic(self, state) -> float:
+        """Backward heuristic: estimated cost from `state` to the start.
+
+        Most domains use symmetric distance metrics (Manhattan, Euclidean),
+        so the default implementation delegates to the forward heuristic.
+        Override this in asymmetric domains or when the backward search
+        direction requires a different admissible estimate.
+        """
+        return self.heuristic(state)
