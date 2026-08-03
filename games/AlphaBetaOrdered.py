@@ -11,8 +11,10 @@ class AlphaBetaOrderedSolver(GameSolver):
     maximize the probability of early cutoffs.
     """
     
-    def __init__(self):
+    def __init__(self, max_depth: int = -1, evaluation_function=None):
         super().__init__()
+        self.max_depth = max_depth
+        self.evaluation_function = evaluation_function
         self.killer_moves = KillerMoves()
         self.history = HistoryHeuristic()
         
@@ -66,6 +68,11 @@ class AlphaBetaOrderedSolver(GameSolver):
         if state.is_terminal():
             return state.get_utility(self.root_player)
             
+        if self.max_depth != -1 and depth >= self.max_depth:
+            if self.evaluation_function:
+                return self.evaluation_function(state, self.root_player)
+            return 0.0 # Default to 0 if no eval function provided
+            
         value = float('-inf')
         actions = self._order_moves(state, depth)
         
@@ -88,6 +95,11 @@ class AlphaBetaOrderedSolver(GameSolver):
         
         if state.is_terminal():
             return state.get_utility(self.root_player)
+            
+        if self.max_depth != -1 and depth >= self.max_depth:
+            if self.evaluation_function:
+                return self.evaluation_function(state, self.root_player)
+            return 0.0
             
         value = float('inf')
         actions = self._order_moves(state, depth)
