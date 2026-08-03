@@ -74,3 +74,26 @@ def test_map_coloring_mac():
     assert len(solution) == 7
     # MAC should solve Australia with zero backtracks (7 node expansions)
     assert solver.nodes_expanded == 7
+
+def test_n_queens_csp():
+    from domains.n_queens.NQueensCSP import NQueensCSP
+    problem = NQueensCSP(n=4)
+    solver = BacktrackingSolver(
+        problem,
+        select_unassigned_variable=mrv,
+        order_domain_values=order_domain_values_default,
+        inference=mac
+    )
+    solution = solver.solve()
+    assert solver.status == "SUCCESS"
+    assert solution is not None
+    assert len(solution) == 4
+    
+    # Verify no queens attack each other
+    for r1 in range(4):
+        for r2 in range(r1 + 1, 4):
+            c1 = solution[r1]
+            c2 = solution[r2]
+            assert c1 != c2
+            assert abs(r1 - r2) != abs(c1 - c2)
+
