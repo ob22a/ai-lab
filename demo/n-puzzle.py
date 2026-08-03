@@ -3,6 +3,7 @@ from domains.n_puzzle.NPuzzle import NPuzzle
 from domains.n_puzzle.NPuzzleProblem import NPuzzleProblem
 from search.informed.IDAStar import IDAStar
 from search.informed.AStar import AStar
+from search.informed.SMAstar import SMAStar
 from visualization.NPuzzleVisualizer import NPuzzleVisualizer
 from domains.n_puzzle.PatternDatabase import PatternDatabase
 from domains.n_puzzle.utils import print_puzzle
@@ -11,7 +12,7 @@ import copy
 
 def main():
     print("Initializing 8-Puzzle (3x3) GUI...")
-    size = 4
+    size = 3
     generator = NPuzzleGenerator(size)
     puzzle = NPuzzle(size)
     
@@ -25,11 +26,13 @@ def main():
 
     # pattern dbs
     pdb_15puzzle = [PatternDatabase("./pdbs/15puzzle_12345.bin"),PatternDatabase('./pdbs/15puzzle_6789a.bin'),PatternDatabase('./pdbs/15puzzle_bcdef.bin')]
+    pdb_8puzzle = [PatternDatabase("./pdbs/8puzzle_1234.bin"),PatternDatabase('./pdbs/8puzzle_5678.bin')]
     
     # Setup problem and solver
-    problem = NPuzzleProblem(start_state, puzzle, heuristic_type="pattern_db", pdbs=pdb_15puzzle)
+    problem = NPuzzleProblem(start_state, puzzle, heuristic_type="pattern_db", pdbs=pdb_8puzzle)
     problem_without_gui = copy.deepcopy(problem)
     problem_a_star = copy.deepcopy(problem)
+    problem_sma_star = copy.deepcopy(problem)
 
     solver = IDAStar(problem)
 
@@ -57,6 +60,11 @@ def main():
     solver_a_star = AStar(problem_a_star)
     result_a_star = solver_a_star.run()
     print(result_a_star)
+
+    print("Running SMA* without GUI for performance measurement...")
+    solver_sma_star = SMAStar(problem_sma_star, memory_limit=1000)
+    result_sma_star = solver_sma_star.run()
+    print(result_sma_star)
 
 if __name__ == "__main__":
     main()

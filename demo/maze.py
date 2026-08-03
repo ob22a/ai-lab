@@ -2,6 +2,8 @@ from domains.maze.RandomizedKruskal import RandomizedKruskalGenerator
 from domains.maze.MazeSearch import MazeSearchProblem
 from search.informed.IDAStar import IDAStar
 from search.informed.AStar import AStar
+from search.informed.SMAstar import SMAStar
+from search.informed.GBFS import GreedyBestFirstSearch
 from visualization.MazeVisualizer import MazeSearchVisualizer
 
 def main():
@@ -15,7 +17,7 @@ def main():
     problem = MazeSearchProblem(maze, (0, 0), (19, 29))
     
     # 3. Setup the Solver
-    solver = IDAStar(problem)
+    solver = SMAStar(problem)
     
     # 4. Launch Visualizer!
     print("Launching Pygame Window! Press 'SPACE' to step or 'A' to auto-run.")
