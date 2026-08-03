@@ -11,30 +11,53 @@ class CrazyState(GameState):
                  deck_counts: dict, discard_pile: List[CrazyCard], 
                  current_player: int, active_suit: str = None, 
                  player_to_draw: int = None, pending_draws: int = 0,
-                 turn_skipped: bool = False):
+                 turn_skipped: bool = False, wild_suit_change_allowed: bool = True):
         
         self.p1_hand = sorted(p1_hand, key=lambda c: (str(c.rank), c.suit))
         self.p2_hand = sorted(p2_hand, key=lambda c: (str(c.rank), c.suit))
         self.deck_counts = deck_counts.copy() # Dictionary of card -> count in deck
         self.discard_pile = discard_pile[:]
         self.current_player = current_player
-        
-        # Game modifiers
-        self.active_suit = active_suit or (self.discard_pile[-1].suit if self.discard_pile else None)
-        
+
+        # Game modifiers – active_suit is only set after the first card is played
+        self.active_suit = active_suit if active_suit else (
+            self.discard_pile[-1].suit if self.discard_pile else None
+        )
+
         # Chance node state
         self.player_to_draw = player_to_draw
-        
+
         # Penalties
         self.pending_draws = pending_draws
         self.turn_skipped = turn_skipped
+
+        # Post-draw play opportunity: True when player drew and can still play
+        self.just_drew = False   # set manually after construction when needed
+
+        # Last action for the move log (set externally after apply_action)
+        self.last_action_str = ""
+
+        # Stacking wildcards rule: J/8/Joker cannot change the suit if played immediately
+        # on top of another wild card, but can if a turn has passed (draw/pass/skip/non-wild).
+        self.wild_suit_change_allowed = wild_suit_change_allowed
+
+    def _can_reshuffle(self) -> bool:
+        """Returns True if the discard pile can be reshuffled into the deck."""
+        return sum(self.deck_counts.values()) == 0 and len(self.discard_pile) > 1
+
+    def _reshuffled_deck(self) -> dict:
+        """Returns a new deck_counts dict from the discard pile (keeping the top card)."""
+        new_deck: dict = {}
+        for card in self.discard_pile[:-1]:  # everything except the top card
+            new_deck[card] = new_deck.get(card, 0) + 1
+        return new_deck
 
     def is_terminal(self) -> bool:
         # Game over if someone runs out of cards
         if len(self.p1_hand) == 0 or len(self.p2_hand) == 0:
             return True
-        # Draw game if the deck is completely empty and no one can play
-        if sum(self.deck_counts.values()) == 0 and self.current_player == 0:
+        # True draw: deck is empty, discard has only 1 card (can't reshuffle), and it's a CHANCE node
+        if sum(self.deck_counts.values()) == 0 and not self._can_reshuffle() and self.current_player == 0:
             return True
         return False
 
@@ -64,106 +87,149 @@ class CrazyState(GameState):
         return self.current_player
 
     def get_chance_outcomes(self) -> List[Tuple[Any, float]]:
-        """Returns a list of (card, probability) for CHANCE nodes."""
-        total_cards = sum(self.deck_counts.values())
+        """Returns a list of (card, probability) for CHANCE nodes.
+        If the deck is empty but the discard pile has cards, we reshuffle first.
+        """
+        deck = self.deck_counts
+        total_cards = sum(deck.values())
+
+        # Auto-reshuffle: deck is empty but discard has cards to recycle
+        if total_cards == 0 and self._can_reshuffle():
+            deck = self._reshuffled_deck()
+            total_cards = sum(deck.values())
+
         outcomes = []
         if total_cards == 0:
-            return [(None, 1.0)] # Empty deck, draw nothing
-            
-        for card, count in self.deck_counts.items():
+            return [(None, 1.0)]  # Truly empty – draw nothing
+
+        for card, count in deck.items():
             if count > 0:
                 prob = count / total_cards
                 outcomes.append((card, prob))
         return outcomes
 
     def _is_valid_play(self, card: CrazyCard) -> bool:
+        # If no cards have been played yet, anything is valid (first move of the game)
+        if not self.discard_pile:
+            return True
         if card.is_wild():
             return True
         top_card = self.discard_pile[-1]
-        
+
         # The active suit takes precedence (in case a wild card was played previously)
         if self.active_suit and card.suit == self.active_suit:
             return True
-        
+
         # Fallback to rank match
         if card.rank == top_card.rank:
             return True
-            
+
         return False
 
     def _generate_valid_combos(self, hand: List[CrazyCard]) -> List[List[CrazyCard]]:
         """Generates all valid combinations of cards that can be played in one turn."""
         valid_combos = []
-        
-        # 1. Single card plays
-        for i, card in enumerate(hand):
-            if self._is_valid_play(card):
-                # If it's a wild card, we must append a suit choice to the action
-                if card.is_wild():
+        top_is_wild = self.discard_pile[-1].is_wild() if self.discard_pile else False
+        allow_suit_change = (not top_is_wild) or self.wild_suit_change_allowed
+
+        def search(seq, remaining):
+            if len(seq) > 0:
+                if len(seq) == 1 and seq[0].is_wild() and allow_suit_change:
                     for suit in ['Spade', 'Heart', 'Diamond', 'Club']:
-                        valid_combos.append([card, suit])
+                        valid_combos.append([seq[0], suit])
                 else:
-                    valid_combos.append([card])
-                    
-        # 2. Multi-card combinations (Rank Match or Suit Match starting with 7)
-        # For performance, we only generate up to length 4 combos
-        # (Generating all subsets is expensive, so we just group by rank and suit)
-        
-        # Rank Combos (e.g. 4s)
-        ranks = {}
-        for c in hand:
-            if not c.is_wild():
-                if c.rank not in ranks:
-                    ranks[c.rank] = []
-                ranks[c.rank].append(c)
-                
-        for rank, cards in ranks.items():
-            if len(cards) > 1:
-                # We can play this combo if the FIRST card is valid
-                for first_idx in range(len(cards)):
-                    if self._is_valid_play(cards[first_idx]):
-                        combo = [cards[first_idx]]
-                        # Add the rest
-                        for i, c in enumerate(cards):
-                            if i != first_idx:
-                                combo.append(c)
-                        # We could play subset combos, but playing ALL of them is always strictly better
-                        valid_combos.append(combo)
-                        
-        # Suit Combos (Starting with 7)
-        for i, first_card in enumerate(hand):
-            if first_card.rank == 7 and self._is_valid_play(first_card):
-                suit = first_card.suit
-                combo = [first_card]
-                for c in hand:
-                    if c != first_card and c.suit == suit and not c.is_wild():
-                        combo.append(c)
-                if len(combo) > 1:
-                    valid_combos.append(combo)
+                    valid_combos.append(list(seq))
+            
+            if len(seq) >= 5:
+                return
+
+            for card in remaining:
+                if not seq:
+                    if self._is_valid_play(card):
+                        new_rem = [c for c in remaining if c != card]
+                        search([card], new_rem)
+                else:
+                    prev = seq[-1]
+                    if card.rank == prev.rank:
+                        new_rem = [c for c in remaining if c != card]
+                        search(seq + [card], new_rem)
+                    elif prev.rank == 7 and card.suit == prev.suit:
+                        new_rem = [c for c in remaining if c != card]
+                        search(seq + [card], new_rem)
+                    elif card.is_wild():
+                        new_rem = [c for c in remaining if c != card]
+                        search(seq + [card], new_rem)
+                    else:
+                        last_7 = None
+                        for c in reversed(seq):
+                            if c.rank == 7:
+                                last_7 = c
+                                break
+                        if last_7 and card.suit == last_7.suit and not card.is_wild():
+                            new_rem = [c for c in remaining if c != card]
+                            search(seq + [card], new_rem)
+
+        search([], hand)
+
+        unique_combos = []
+        seen = set()
+        for combo in valid_combos:
+            rep = tuple((c.rank, c.suit) if isinstance(c, CrazyCard) else c for c in combo)
+            if rep not in seen:
+                seen.add(rep)
+                unique_combos.append(combo)
+
+        return unique_combos
                     
         return valid_combos
+
+    def _get_counter_penalty_actions(self, hand: List[CrazyCard]) -> List[Any]:
+        """
+        When under a pending draw penalty, a player may 'counter' by playing
+        their own draw-penalty card(s) to pass the penalty along.
+        A combo (single or multi-card) is a valid counter if:
+          - It is a valid play from _generate_valid_combos(hand)
+          - All cards in the combo are penalty cards (draw_penalty > 0)
+          - All cards in the combo have the same rank (e.g. multiple 2s, multiple 7s, multiple Jokers, or single A♠)
+        """
+        valid_combos = self._generate_valid_combos(hand)
+        counters = []
+        for combo in valid_combos:
+            cards_in_combo = [x for x in combo if isinstance(x, CrazyCard)]
+            if cards_in_combo:
+                all_penalty = all(c.get_draw_penalty() > 0 for c in cards_in_combo)
+                first_rank = cards_in_combo[0].rank
+                same_rank = all(c.rank == first_rank for c in cards_in_combo)
+                if all_penalty and same_rank:
+                    counters.append(combo)
+        return counters
 
     def get_legal_actions(self) -> List[Any]:
         if self.current_player == 0:
             return [outcome[0] for outcome in self.get_chance_outcomes()]
-            
+
         # Standard player turn
         hand = self.p1_hand if self.current_player == 1 else self.p2_hand
-        
+
+        # Post-draw opportunity: player can play the card they just drew or pass
+        if getattr(self, 'just_drew', False):
+            valid_plays = self._generate_valid_combos(hand)
+            return [tuple(a) for a in valid_plays] + [("PASS_TURN",)]
+
         if self.pending_draws > 0:
-            # We are forced to draw due to a penalty!
-            # The player has no choice but to transition to a CHANCE node
-            return ["DRAW_PENALTY"]
-            
-        if self.turn_skipped:
-            return ["SKIP"]
+            # Player can either accept the draw penalty OR counter with their own penalty card
+            counter_actions = self._get_counter_penalty_actions(hand)
+            if counter_actions:
+                return [tuple(a) for a in counter_actions] + [("DRAW_PENALTY",)]
+            return [("DRAW_PENALTY",)]
 
         actions = self._generate_valid_combos(hand)
-        
+
         # A player can always choose to draw a card if they have no valid moves (or just want to)
-        actions.append(["DRAW_FROM_DECK"])
-        
-        return actions
+        actions.append(("DRAW_FROM_DECK",))
+
+        # Convert all combos to tuples so they are hashable
+        return [tuple(a) for a in actions]
 
     def apply_action(self, action: Any) -> 'CrazyState':
         p1 = list(self.p1_hand)
@@ -178,40 +244,49 @@ class CrazyState(GameState):
 
         if self.current_player == 0:
             # Resolving a CHANCE node (drawing a card)
+            # If the deck is empty, reshuffle the discard pile first
+            if sum(deck.values()) == 0 and len(discard) > 1:
+                new_deck = {}
+                for card in discard[:-1]:
+                    new_deck[card] = new_deck.get(card, 0) + 1
+                deck = new_deck
+                discard = [discard[-1]]  # Keep only the top card
+
             card_drawn = action
             if card_drawn is not None:
-                deck[card_drawn] -= 1
+                deck[card_drawn] = max(0, deck.get(card_drawn, 0) - 1)
                 if player_to_draw == 1:
                     p1.append(card_drawn)
                 else:
                     p2.append(card_drawn)
-                    
+
             if pending > 0:
                 pending -= 1
                 if pending > 0:
                     # Still need to draw more penalty cards
-                    return CrazyState(p1, p2, deck, discard, 0, active_suit, player_to_draw, pending, skipped)
+                    return CrazyState(p1, p2, deck, discard, 0, active_suit, player_to_draw, pending, skipped, wild_suit_change_allowed=True)
                 else:
                     # Penalty finished. Now it's this player's normal turn (unless they were skipped)
                     next_player = player_to_draw
-                    return CrazyState(p1, p2, deck, discard, next_player, active_suit, None, 0, skipped)
+                    return CrazyState(p1, p2, deck, discard, next_player, active_suit, None, 0, skipped, wild_suit_change_allowed=True)
             else:
-                # Normal draw from deck. Turn ends immediately after drawing (for simplicity in our AI model).
-                # Actually, the rules say you can play it immediately.
-                # To simplify the AI game tree, we will enforce that drawing ends the turn.
-                next_player = 2 if player_to_draw == 1 else 1
-                return CrazyState(p1, p2, deck, discard, next_player, active_suit, None, 0, False)
+                # Normal draw from deck.
+                # Give the player a chance to play the drawn card before ending turn.
+                new_state = CrazyState(p1, p2, deck, discard, player_to_draw, active_suit, None, 0, False, wild_suit_change_allowed=True)
+                new_state.just_drew = True  # Signal: player may play 1 card or pass
+                return new_state
 
         # Player turn actions
-        if action == "DRAW_PENALTY":
-            return CrazyState(p1, p2, deck, discard, 0, active_suit, self.current_player, pending, skipped)
-            
-        if action == "SKIP":
+        if action == ("DRAW_PENALTY",):
+            return CrazyState(p1, p2, deck, discard, 0, active_suit, self.current_player, pending, skipped, wild_suit_change_allowed=True)
+
+        if action == ("DRAW_FROM_DECK",):
+            return CrazyState(p1, p2, deck, discard, 0, active_suit, self.current_player, 0, False, wild_suit_change_allowed=True)
+
+        if action == ("PASS_TURN",):
+            # Player drew a card and chose not to play it — end the turn
             next_player = 2 if self.current_player == 1 else 1
-            return CrazyState(p1, p2, deck, discard, next_player, active_suit, None, 0, False)
-            
-        if action == ["DRAW_FROM_DECK"]:
-            return CrazyState(p1, p2, deck, discard, 0, active_suit, self.current_player, 0, False)
+            return CrazyState(p1, p2, deck, discard, next_player, active_suit, None, 0, False, wild_suit_change_allowed=True)
 
         # Playing a combo
         hand = p1 if self.current_player == 1 else p2
@@ -224,22 +299,73 @@ class CrazyState(GameState):
                 hand.remove(item)
                 discard.append(item)
                 
-        # Resolve abilities (only the top-most special cards trigger)
-        # We aggregate abilities if they are the same rank, otherwise just the top card
-        top_card = discard[-1]
-        active_suit = new_suit if new_suit else top_card.suit
+        # Resolve abilities
+        top_card   = discard[-1]
+        top_is_wild = len(self.discard_pile) >= 1 and self.discard_pile[-1].is_wild()
+        allow_suit_change = (not top_is_wild) or self.wild_suit_change_allowed
+
+        # If a new wild is played on top of an existing wild, inherit the active_suit (no change)
+        cards_played = [x for x in action if isinstance(x, CrazyCard)]
+        first_played_is_wild = cards_played and cards_played[0].is_wild()
+        new_suit_str = new_suit  # declared suit (if any) from the action
+
+        if first_played_is_wild and top_is_wild and not self.wild_suit_change_allowed:
+            # Wild-on-wild without a turn passing: keep the existing active_suit
+            active_suit = self.active_suit
+        elif new_suit_str and allow_suit_change:
+            active_suit = new_suit_str
+        else:
+            # If a wild card is played but no suit choice is declared/allowed, inherit the active suit.
+            # Otherwise (non-wild play), inherit the top card's suit.
+            if first_played_is_wild:
+                active_suit = self.active_suit if (self.active_suit and self.active_suit != 'Joker') else 'Spade'
+            else:
+                active_suit = top_card.suit
+                if active_suit == 'Joker':
+                    active_suit = 'Spade'
+
+        # Set suit change allowed for next turn:
+        # If a wild was played, it only restricts the next wildcard if it actually CHANGED the suit.
+        # If it kept the suit the same, then wild_suit_change_allowed remains True.
+        suit_changed = (active_suit != self.active_suit)
+        if first_played_is_wild:
+            new_wild_suit_change_allowed = not suit_changed
+        else:
+            new_wild_suit_change_allowed = True
         
+        # Calculate penalty:
+        # The penalty is determined by the contiguous run of penalty cards at the TOP (end) of the played sequence.
+        # We start from the last played card (top of discard) and go backwards.
         penalty = 0
-        skip = False
-        
-        for item in action:
-            if isinstance(item, CrazyCard):
-                if item.skips_turn():
-                    skip = True
-                penalty += item.get_draw_penalty()
-                # 7 combo edge case: only add up penalty if all are 7s or something?
-                # The python code says if it's a 7 combo, we add the penalties.
-                
-        next_player = 2 if self.current_player == 1 else 1
-        
-        return CrazyState(p1, p2, deck, discard, next_player, active_suit, None, penalty, skip)
+        if cards_played:
+            top_card = cards_played[-1]
+            if top_card.get_draw_penalty() > 0:
+                has_7 = any(c.rank == 7 for c in cards_played)
+                has_other_than_7 = any(c.rank != 7 for c in cards_played)
+                is_7_suit_combo = has_7 and has_other_than_7
+
+                for c in reversed(cards_played):
+                    if c.get_draw_penalty() > 0:
+                        if is_7_suit_combo and c.rank == 7:
+                            break  # 7 doesn't contribute and stops the penalty accumulation
+                        
+                        if c.rank == top_card.rank or (c.rank == 'A' and top_card.rank == 'A'):
+                            penalty += c.get_draw_penalty()
+                        else:
+                            break
+                    else:
+                        break
+
+        num_skips = sum(1 for c in cards_played if c.skips_turn())
+        toggles = 1 + num_skips
+        next_player = self.current_player
+        for _ in range(toggles):
+            next_player = 2 if next_player == 1 else 1
+
+        # If the current player countered an incoming draw penalty,
+        # stack the new penalty on top and pass it to the opponent.
+        if self.pending_draws > 0 and penalty > 0:
+            combined_penalty = self.pending_draws + penalty
+            return CrazyState(p1, p2, deck, discard, next_player, active_suit, None, combined_penalty, False, wild_suit_change_allowed=new_wild_suit_change_allowed)
+
+        return CrazyState(p1, p2, deck, discard, next_player, active_suit, None, penalty, False, wild_suit_change_allowed=new_wild_suit_change_allowed)
