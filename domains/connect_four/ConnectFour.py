@@ -1,8 +1,17 @@
 from typing import List, Any
 from games.GameState import GameState
 
+import random
+
 ROWS = 6
 COLS = 7
+
+# --- Zobrist Hashing Initialization ---
+# We need a random 64-bit integer for every (row, col, player) combination.
+# Player 1 is index 0, Player -1 is index 1
+ZOBRIST_TABLE = [[[random.getrandbits(64) for _ in range(2)] for _ in range(COLS)] for _ in range(ROWS)]
+ZOBRIST_TURN = random.getrandbits(64)
+# --------------------------------------
 
 class ConnectFourState(GameState):
     """
@@ -22,6 +31,30 @@ class ConnectFourState(GameState):
         self._winner = None
         self._is_terminal = None
         
+        # Incremental Zobrist Hash
+        self._hash = None
+        if board is None:
+            # Calculate initial hash for empty board
+            self._hash = 0
+            if self.current_player == -1:
+                self._hash ^= ZOBRIST_TURN
+        # If board is provided, the hash must be passed in via apply_action, 
+        # otherwise it will be lazily computed (not ideal for performance, but safe).
+        
+    def get_hash(self) -> int:
+        if self._hash is None:
+            h = 0
+            for r in range(ROWS):
+                for c in range(COLS):
+                    val = self.board[r][c]
+                    if val != 0:
+                        player_idx = 0 if val == 1 else 1
+                        h ^= ZOBRIST_TABLE[r][c][player_idx]
+            if self.current_player == -1:
+                h ^= ZOBRIST_TURN
+            self._hash = h
+        return self._hash
+        
     def get_legal_actions(self) -> List[int]:
         """Returns a list of valid columns (0 to 6) where a piece can be dropped."""
         # A column is valid if its top row (row 0) is empty
@@ -36,13 +69,24 @@ class ConnectFourState(GameState):
         new_board = [row[:] for row in self.board]
         
         # Find the lowest empty row in this column
+        drop_row = -1
         for r in range(ROWS - 1, -1, -1):
             if new_board[r][action] == 0:
                 new_board[r][action] = self.current_player
+                drop_row = r
                 break
                 
         next_player = -self.current_player
-        return ConnectFourState(new_board, next_player)
+        new_state = ConnectFourState(new_board, next_player)
+        
+        # Fast incremental hash update
+        h = self.get_hash()
+        player_idx = 0 if self.current_player == 1 else 1
+        h ^= ZOBRIST_TABLE[drop_row][action][player_idx] # Add piece
+        h ^= ZOBRIST_TURN # Swap turn
+        new_state._hash = h
+        
+        return new_state
 
     def is_terminal(self) -> bool:
         if self._is_terminal is not None:

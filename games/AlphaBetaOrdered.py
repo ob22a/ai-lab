@@ -1,8 +1,10 @@
+import time
 from typing import Any, List
 from games.GameState import GameState
 from games.GameSolver import GameSolver
 from games.heuristics.KillerMoves import KillerMoves
 from games.heuristics.HistoryHeuristic import HistoryHeuristic
+from games.TranspositionTable import TranspositionTable, TTFlag
 
 class AlphaBetaOrderedSolver(GameSolver):
     """
@@ -17,6 +19,11 @@ class AlphaBetaOrderedSolver(GameSolver):
         self.evaluation_function = evaluation_function
         self.killer_moves = KillerMoves()
         self.history = HistoryHeuristic()
+        self.transposition_table = TranspositionTable()
+        
+        # Timeout handling
+        self.start_time = None
+        self.time_limit = None
         
     def _order_moves(self, state: GameState, depth: int) -> List[Any]:
         actions = state.get_legal_actions()
@@ -36,13 +43,25 @@ class AlphaBetaOrderedSolver(GameSolver):
         actions.sort(key=move_score, reverse=True)
         return actions
     
-    def get_best_action(self, state: GameState) -> Any:
+    def _check_timeout(self):
+        # We don't check time on literally every node to save overhead, 
+        # but every 1000 nodes is extremely safe.
+        if self.time_limit is not None and self.start_time is not None:
+            if self.nodes_expanded % 1000 == 0:
+                if time.time() - self.start_time > self.time_limit:
+                    # Import locally to avoid circular dependency
+                    from games.IterativeDeepening import TimeoutException
+                    raise TimeoutException()
+                    
+    def get_best_action(self, state: GameState, is_iterative: bool = False) -> Any:
         self.nodes_expanded = 0
         self.root_player = state.get_current_player()
         
-        # Reset tables for the new search
-        self.killer_moves = KillerMoves()
-        self.history = HistoryHeuristic()
+        # Only reset tables if this is a fresh search, not an iterative deepening step
+        if not is_iterative:
+            self.killer_moves = KillerMoves()
+            self.history = HistoryHeuristic()
+            self.transposition_table.clear()
         
         best_value = float('-inf')
         best_action = None
@@ -64,6 +83,7 @@ class AlphaBetaOrderedSolver(GameSolver):
         
     def _max_value(self, state: GameState, alpha: float, beta: float, depth: int) -> float:
         self.nodes_expanded += 1
+        self._check_timeout()
         
         if state.is_terminal():
             return state.get_utility(self.root_player)
@@ -73,7 +93,17 @@ class AlphaBetaOrderedSolver(GameSolver):
                 return self.evaluation_function(state, self.root_player)
             return 0.0 # Default to 0 if no eval function provided
             
+        # Transposition Table Lookup
+        if hasattr(state, 'get_hash'):
+            h = state.get_hash()
+            # The remaining depth is max_depth - depth
+            rem_depth = self.max_depth - depth if self.max_depth != -1 else float('inf')
+            found, cached_score = self.transposition_table.lookup(h, rem_depth, alpha, beta)
+            if found:
+                return cached_score
+                
         value = float('-inf')
+        original_alpha = alpha
         actions = self._order_moves(state, depth)
         
         for action in actions:
@@ -84,14 +114,22 @@ class AlphaBetaOrderedSolver(GameSolver):
                 # Cutoff! Record heuristics.
                 self.killer_moves.store_killer(depth, action)
                 self.history.increment(action, depth)
+                if hasattr(state, 'get_hash'):
+                    self.transposition_table.store(h, rem_depth, value, TTFlag.LOWER_BOUND)
                 return value
                 
             alpha = max(alpha, value)
+            
+        # We searched all children, store EXACT or UPPER_BOUND
+        if hasattr(state, 'get_hash'):
+            flag = TTFlag.EXACT if value > original_alpha else TTFlag.UPPER_BOUND
+            self.transposition_table.store(h, rem_depth, value, flag)
             
         return value
         
     def _min_value(self, state: GameState, alpha: float, beta: float, depth: int) -> float:
         self.nodes_expanded += 1
+        self._check_timeout()
         
         if state.is_terminal():
             return state.get_utility(self.root_player)
@@ -101,7 +139,16 @@ class AlphaBetaOrderedSolver(GameSolver):
                 return self.evaluation_function(state, self.root_player)
             return 0.0
             
+        # Transposition Table Lookup
+        if hasattr(state, 'get_hash'):
+            h = state.get_hash()
+            rem_depth = self.max_depth - depth if self.max_depth != -1 else float('inf')
+            found, cached_score = self.transposition_table.lookup(h, rem_depth, alpha, beta)
+            if found:
+                return cached_score
+                
         value = float('inf')
+        original_beta = beta
         actions = self._order_moves(state, depth)
         
         for action in actions:
@@ -112,8 +159,15 @@ class AlphaBetaOrderedSolver(GameSolver):
                 # Cutoff! Record heuristics.
                 self.killer_moves.store_killer(depth, action)
                 self.history.increment(action, depth)
+                if hasattr(state, 'get_hash'):
+                    self.transposition_table.store(h, rem_depth, value, TTFlag.UPPER_BOUND)
                 return value
                 
             beta = min(beta, value)
+            
+        # We searched all children, store EXACT or LOWER_BOUND
+        if hasattr(state, 'get_hash'):
+            flag = TTFlag.EXACT if value < original_beta else TTFlag.LOWER_BOUND
+            self.transposition_table.store(h, rem_depth, value, flag)
             
         return value
