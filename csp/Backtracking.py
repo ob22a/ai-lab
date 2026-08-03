@@ -30,6 +30,8 @@ class BacktrackingSolver(CSPSolver):
         self.select_unassigned_variable = select_unassigned_variable
         self.order_domain_values = order_domain_values
         self.inference = inference
+        self.on_assign = None
+        self.on_unassign = None
 
     def solve(self) -> Dict[Any, Any]:
         # Initialize current domains with full domains
@@ -51,6 +53,8 @@ class BacktrackingSolver(CSPSolver):
             self.nodes_expanded += 1
             if self.problem.is_consistent(var, value, assignment):
                 assignment[var] = value
+                if self.on_assign:
+                    self.on_assign(var, value, assignment)
                 
                 # We must clone current_domains because inference might prune it
                 # We could track removals instead to be more memory efficient, but deepcopy is simple.
@@ -67,5 +71,7 @@ class BacktrackingSolver(CSPSolver):
                 
                 # Backtrack
                 del assignment[var]
+                if self.on_unassign:
+                    self.on_unassign(var, assignment)
 
         return None
