@@ -229,6 +229,25 @@ class MazeSearchVisualizer(Visualizer):
 
         pygame.display.flip()
 
+    def _step_solver(self):
+        if hasattr(self.solver, "env"):
+            # Online Search Agent
+            if not hasattr(self.solver, "percept"):
+                self.solver.percept = self.solver.env.get_percept()
+            
+            action = self.solver.search_step(self.solver.percept)
+            if action is None:
+                self.solver.status = SearchStatus.SUCCESS
+            else:
+                self.solver.percept = self.solver.env.execute_action(action)
+                
+            # Update visualizer's view of the agent's location
+            if hasattr(self.solver.env, "agent_location"):
+                self.solver.current_node = Node(self.solver.env.agent_location, parent=None, action=None, path_cost=0)
+        else:
+            # Standard Offline Search Algorithm
+            self.solver.search_step()
+
     def update(self):
 
         for event in pygame.event.get():
@@ -250,7 +269,7 @@ class MazeSearchVisualizer(Visualizer):
                         self.solver.status==SearchStatus.RUNNING 
                         or self.solver.status==SearchStatus.DEPTH_EXCEEDED
                     ):
-                        self.solver.search_step()
+                        self._step_solver()
 
                 elif event.key == pygame.K_a:
 
@@ -264,7 +283,7 @@ class MazeSearchVisualizer(Visualizer):
             == SearchStatus.RUNNING 
             or self.solver.status==SearchStatus.DEPTH_EXCEEDED)
         ):
-            self.solver.search_step()
+            self._step_solver()
 
     def restart(self):
         self.solver.reset()
