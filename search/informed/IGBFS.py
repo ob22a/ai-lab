@@ -36,7 +36,6 @@ class IGBFS(SearchAlgorithm):
         h = self.problem.heuristic(self.problem.start)
         self._heuristic_cache[self.problem.start] = h
 
-        # Initial cutoff is h(start) — we only expand nodes with h <= limit.
         self.limit = h
         self.next_limit = float("inf")
 
@@ -62,7 +61,6 @@ class IGBFS(SearchAlgorithm):
 
         self.num_iterations += 1
 
-        # --- New iteration: frontier exhausted, raise the h-limit ---
         if not self.frontier:
             if self.next_limit == float("inf"):
                 self.status = SearchStatus.FAILURE
@@ -81,7 +79,6 @@ class IGBFS(SearchAlgorithm):
 
         node, exiting = self.frontier.pop()
 
-        # Exit marker: remove node from the current path as DFS unwinds.
         if exiting:
             self.path.discard(node.state)
             self.frontier_states.discard(node.state)
@@ -111,7 +108,6 @@ class IGBFS(SearchAlgorithm):
                 h = self.problem.heuristic(child_state)
                 self._heuristic_cache[child_state] = h
 
-            # KEY DIFFERENCE from IDA*: cutoff on h(child) not g+h(child).
             if h > self.limit:
                 if h < self.next_limit:
                     self.next_limit = h
