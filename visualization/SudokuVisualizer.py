@@ -31,7 +31,7 @@ class SudokuVisualizer:
 
         pygame.init()
         self.screen = pygame.display.set_mode((self.width, self.height))
-        pygame.display.set_caption("AI Framework - Sudoku CSP Solver")
+        pygame.display.set_caption("AI Lab - Sudoku CSP Solver")
 
         self.font = pygame.font.SysFont("consolas", 16)
         self.font_title = pygame.font.SysFont("consolas", 20, bold=True)
@@ -48,6 +48,7 @@ class SudokuVisualizer:
         self.backtracked_vars = set()
         
         self.nodes_expanded = 0
+        self.restart_requested = False
 
         # Hook into solver
         if hasattr(self.solver, "on_assign"):
@@ -123,6 +124,7 @@ class SudokuVisualizer:
         y += 20
         draw("CONTROLS:", self.font_title, self.COLORS["hud_title"])
         draw("[SPACE] Play / Pause")
+        draw("[R] Restart")
         draw("[UP/DOWN] Change Speed")
         
         y += 20
@@ -137,6 +139,8 @@ class SudokuVisualizer:
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE:
                     self.paused = not self.paused
+                elif event.key == pygame.K_r:
+                    self.restart_requested = True
                 elif event.key == pygame.K_UP:
                     self.delay_ms = max(0, self.delay_ms - 10)
                 elif event.key == pygame.K_DOWN:
@@ -150,15 +154,18 @@ class SudokuVisualizer:
             
         self._process_events()
         
-        while self.paused and self.running:
+        if self.restart_requested:
+            raise InterruptedError("Restart requested")
+            
+        while self.paused and self.running and not self.restart_requested:
             self._process_events()
             self.draw_grid()
             self.draw_hud()
             pygame.display.flip()
             time.sleep(0.05)
             
-        if not self.running:
-            raise InterruptedError("Visualizer closed by user.")
+        if not self.running or self.restart_requested:
+            raise InterruptedError("Visualizer closed or restarted by user.")
 
         self.draw_grid()
         self.draw_hud()
@@ -168,34 +175,44 @@ class SudokuVisualizer:
             time.sleep(self.delay_ms / 1000.0)
 
     def run(self):
-        # Draw initial state and wait for unpause
-        self.draw_grid()
-        self.draw_hud()
-        pygame.display.flip()
-        
         print("Sudoku Visualizer ready. Press SPACE to start solving.")
         
-        try:
-            while self.paused and self.running:
-                self._process_events()
-                self.draw_grid()
-                self.draw_hud()
-                pygame.display.flip()
-                time.sleep(0.05)
-                
-            if self.running:
-                self.solver.solve()
-                
-            # Done solving, keep window open until closed
+        while self.running:
+            self.restart_requested = False
+            self.current_assignment = dict(self.initial_assignment)
+            self.solver.assignment = dict(self.initial_assignment)
+            self.solver.nodes_expanded = 0
+            self.nodes_expanded = 0
+            self.backtracked_vars = set()
             self.last_modified_var = None
-            while self.running:
-                self._process_events()
-                self.draw_grid()
-                self.draw_hud()
-                pygame.display.flip()
-                time.sleep(0.1)
-                
-        except InterruptedError:
-            pass
+            self.paused = True
+            
+            # Draw initial state and wait for unpause
+            self.draw_grid()
+            self.draw_hud()
+            pygame.display.flip()
+            
+            try:
+                while self.paused and self.running and not self.restart_requested:
+                    self._process_events()
+                    self.draw_grid()
+                    self.draw_hud()
+                    pygame.display.flip()
+                    time.sleep(0.05)
+                    
+                if self.running and not self.restart_requested:
+                    self.solver.solve()
+                    
+                # Done solving, keep window open until closed
+                self.last_modified_var = None
+                while self.running and not self.restart_requested:
+                    self._process_events()
+                    self.draw_grid()
+                    self.draw_hud()
+                    pygame.display.flip()
+                    time.sleep(0.1)
+                    
+            except InterruptedError:
+                pass
             
         pygame.quit()
