@@ -17,7 +17,7 @@ def main():
     problem = MazeSearchProblem(maze, (0, 0), (19, 29))
     
     # 3. Setup the Solver
-    solver = SMAStar(problem)
+    solver = SMAStar(problem,memory_limit=40)
     
     # 4. Launch Visualizer!
     print("Launching Pygame Window! Press 'SPACE' to step or 'A' to auto-run.")
