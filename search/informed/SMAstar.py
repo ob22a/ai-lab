@@ -16,6 +16,7 @@ class SMAStar(SearchAlgorithm):
         self.frontier_states = {}
         self.explored = set()
         self._heuristic_cache = {}
+        self.expanded_costs = dict() # For a forgotten child to check if it was already expanded before being forgotten
     
     def reset(self):
         super().reset()
@@ -39,6 +40,8 @@ class SMAStar(SearchAlgorithm):
         self.nodes_expanded = 0
         self.max_frontier_size = 1
         self.status = SearchStatus.RUNNING
+
+        self.expanded_costs.clear()
 
     def _heuristic(self, state):
         h = self._heuristic_cache.get(state)
@@ -64,6 +67,7 @@ class SMAStar(SearchAlgorithm):
 
         if not self.frontier:
             self.status = SearchStatus.FAILURE
+            print("SMA*: No solution found within memory limit.")
             return
 
         self.num_iterations += 1
@@ -87,6 +91,7 @@ class SMAStar(SearchAlgorithm):
 
         # 4. Check if this path is completely exhausted
         if not node.forgotten_children and node.successor_index >= len(node.actions):
+            print("PUSH", node.state, id(node))
             node.fully_expanded = True
             node.f_cost = min((c.f_cost for c in node.children), default=float('inf'))
             self._backup(node)
@@ -95,6 +100,7 @@ class SMAStar(SearchAlgorithm):
         # 5. Extract next branch configuration (prioritizing forgotten paths)
         if node.forgotten_children:
             action, backed_up_f = node.forgotten_children.pop(0)
+            print("RECALLING", node.state, action, backed_up_f)
         else:
             action = node.actions[node.successor_index]
             backed_up_f = None
@@ -106,9 +112,20 @@ class SMAStar(SearchAlgorithm):
         if node.parent is not None and child_state == node.parent.state:
             self._push_to_frontier(node)
             return
-
+        
         # 7. Create child node (dataclass handles depth and self._id generation)
         g = node.path_cost + self.problem.get_cost(node.state, action, child_state)
+
+        key = (node.state, child_state, action)
+        old_cost = self.expanded_costs.get(key)
+
+        if old_cost is not None and old_cost <= g:
+            print("Skipping worse duplicate")
+            self._push_to_frontier(node)
+            return
+
+        self.expanded_costs[key] = g
+
         child = Node(state=child_state, parent=node, action=action, path_cost=g)
 
         # Apply path-max equation rules
@@ -156,10 +173,13 @@ class SMAStar(SearchAlgorithm):
         # Filter endpoints from the frontier
         leaves = [n for n in self.frontier if not n.children]
         if not leaves:
+            print("SMA*: No leaves to prune, but frontier exceeds memory limit. This should not happen.")
             return
 
         # Uses the exact same prioritization structure as your dataclass __lt__
         leaf = max(leaves, key=lambda n: (n.f_cost, -n.depth, n._id))
+
+        print("PRUNING", leaf.state)
 
         self._remove_from_frontier(leaf)
         self.explored.discard(leaf.state)
@@ -179,6 +199,7 @@ class SMAStar(SearchAlgorithm):
         if not parent.children:
             self.explored.discard(parent.state)
             if parent not in self.frontier:
-                self._push_to_frontier(parent)
+                if (parent.successor_index < len(parent.actions)):
+                    self._push_to_frontier(parent)
 
         self._backup(parent)
