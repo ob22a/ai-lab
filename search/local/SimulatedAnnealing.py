@@ -15,10 +15,9 @@ class SimulatedAnnealing(SearchAlgorithm):
 
     def __init__(self, problem, schedule_func=None):
         super().__init__(problem)
-        # Default exponential cooling schedule: T = 1000 * (0.95 ^ t)
-        # Drops below 0.001 after ~270 iterations
         if schedule_func is None:
-            self.schedule = lambda t: 1000 * (0.95 ** t)
+            scale = (problem.n // 4)**1.2 if hasattr(problem, 'n') and problem.n is not None else 1
+            self.schedule = lambda t: 100 * (0.95 ** (t / scale))
         else:
             self.schedule = schedule_func
 
@@ -54,6 +53,7 @@ class SimulatedAnnealing(SearchAlgorithm):
             # Better state, always accept
             self.current_state = neighbor
             self.current_value = neighbor_value
+            self.nodes_expanded += 1
         else:
             # Worse state, accept with probability e^(delta_E / T)
             # (Note: delta_E is negative, so this is e^(-|delta_E| / T) <= 1)
@@ -61,8 +61,8 @@ class SimulatedAnnealing(SearchAlgorithm):
             if random.random() < probability:
                 self.current_state = neighbor
                 self.current_value = neighbor_value
+                self.nodes_expanded += 1
 
-        self.nodes_expanded += 1
         self.current_node = Node(self.current_state, parent=None, action=None, path_cost=0)
 
     @property
