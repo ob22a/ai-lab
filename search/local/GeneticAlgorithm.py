@@ -102,6 +102,14 @@ class GeneticAlgorithm(SearchAlgorithm):
         self.current_node = Node(self.best_state, parent=None, action=None, path_cost=0)
 
     @property
+    def current_state(self):
+        return self.best_state
+
+    @current_state.setter
+    def current_state(self, value):
+        self.best_state = value
+
+    @property
     def frontier_states(self):
         return set(self.population)
 
