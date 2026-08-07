@@ -88,9 +88,10 @@ class NQueensVisualizer(Visualizer):
             self.screen.blit(surface, (x, y))
             y += surface.get_height() + gap
 
+        status_name = self.solver.status.name if hasattr(self.solver.status, "name") else str(self.solver.status)
         draw("N-QUEENS OPTIMIZER", self.font_title, self.COLORS["hud_title"], 20)
         draw(f"Solver: {self.solver.__class__.__name__}")
-        draw(f"Status: {self.solver.status.name}")
+        draw(f"Status: {status_name}")
         draw(f"Iterations: {self.solver.num_iterations}")
         draw(f"Nodes Evaluated: {self.solver.nodes_generated}")
         
@@ -106,10 +107,12 @@ class NQueensVisualizer(Visualizer):
         draw("[LEFT]  Step Backward")
         draw("[SPACE] Play / Pause")
         draw("[R]     Restart")
+        draw("[UP/DN] Speed (FPS)")
         
         y += 20
         draw(f"Auto-Run: {'ON' if self.auto_run else 'OFF'}")
         draw(f"Step: {self.history_index} / {len(self.history)-1}")
+        draw(f"FPS: {self.fps}")
 
     def render(self):
         # We always render the state at history_index
@@ -146,9 +149,16 @@ class NQueensVisualizer(Visualizer):
                     self._step_forward()
                 elif event.key == pygame.K_LEFT:
                     self._step_backward()
+                elif event.key == pygame.K_UP:
+                    self.fps = min(60, self.fps + 2)
+                elif event.key == pygame.K_DOWN:
+                    self.fps = max(1, self.fps - 2)
 
         if self.auto_run:
-            self._step_forward()
+            if self.solver.status == SearchStatus.RUNNING or self.history_index < len(self.history) - 1:
+                self._step_forward()
+            else:
+                self.auto_run = False
 
     def run(self):
         while self.running:
