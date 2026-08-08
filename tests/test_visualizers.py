@@ -160,13 +160,36 @@ def test_offline_maze_visualizer_headless():
 
 
 def test_nqueens_all_solvers_headless():
-    problem = NQueensProblem(n=6)
-    
+    # 1. Test local search optimizers
+    problem_opt = NQueensProblem(n=6)
     for solver_cls in [HillClimbing, SimulatedAnnealing, LocalBeamSearch, GeneticAlgorithm]:
-        solver = solver_cls(problem)
-        visualizer = NQueensVisualizer(problem, solver, cell_size=40, fps=10)
+        solver = solver_cls(problem_opt)
+        visualizer = NQueensVisualizer(problem_opt, solver, cell_size=40, fps=10)
         
+        assert len(visualizer.history[0]["queens"]) == 6
         visualizer._step_forward()
         visualizer._step_forward()
+        assert len(visualizer.history[-1]["queens"]) == 6
         visualizer.render()
         visualizer.restart()
+        assert len(visualizer.history[0]["queens"]) == 6
+
+    # 2. Test CSP solvers
+    from domains.n_queens.NQueensCSP import NQueensCSP
+    from csp.Backtracking import BacktrackingSolver
+    from csp.SymmetricBacktracking import SymmetricBacktrackingSolver
+    from csp.MinConflicts import MinConflictsSolver
+    from csp.inference.MAC import mac
+    
+    problem_csp = NQueensCSP(n=6, break_symmetry=True)
+    for csp_solver in [
+        BacktrackingSolver(problem_csp),
+        SymmetricBacktrackingSolver(problem_csp, inference=mac),
+        MinConflictsSolver(problem_csp, max_steps=100)
+    ]:
+        vis_csp = NQueensVisualizer(problem_csp, csp_solver, cell_size=40, fps=10)
+        vis_csp._step_forward()
+        vis_csp._step_forward()
+        vis_csp.render()
+        vis_csp.restart()
+        assert vis_csp.history_index == 0
