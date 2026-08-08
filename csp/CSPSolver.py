@@ -13,6 +13,14 @@ class CSPSolver(ABC):
         self.nodes_expanded = 0
         self.assignment: Dict[Any, Any] = {}
 
+    def reset(self):
+        """
+        Resets the solver internal state for a clean re-run.
+        """
+        self.status = "RUNNING"
+        self.nodes_expanded = 0
+        self.assignment = {}
+
     @abstractmethod
     def solve(self) -> Dict[Any, Any]:
         """

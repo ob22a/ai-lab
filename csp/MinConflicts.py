@@ -1,7 +1,8 @@
 from csp.CSPSolver import CSPSolver
 from csp.CSPProblem import CSPProblem
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 import random
+
 
 class MinConflictsSolver(CSPSolver):
     """
@@ -13,11 +14,18 @@ class MinConflictsSolver(CSPSolver):
     def __init__(self, problem: CSPProblem, max_steps: int = 100000):
         super().__init__(problem)
         self.max_steps = max_steps
+        self.on_assign = None
+        self.on_unassign = None
 
-    def solve(self) -> Dict[Any, Any]:
+    def solve(self) -> Optional[Dict[Any, Any]]:
+        self.reset()
+        
         # 1. Generate an initial complete random assignment
         for var in self.problem.variables:
-            self.assignment[var] = random.choice(self.problem.domains[var])
+            val = random.choice(self.problem.domains[var])
+            self.assignment[var] = val
+            if self.on_assign:
+                self.on_assign(var, val, self.assignment)
             
         for step in range(self.max_steps):
             self.nodes_expanded += 1
@@ -49,7 +57,10 @@ class MinConflictsSolver(CSPSolver):
                     best_values.append(value)
                     
             # Break ties randomly
-            self.assignment[var] = random.choice(best_values)
+            best_val = random.choice(best_values)
+            self.assignment[var] = best_val
+            if self.on_assign:
+                self.on_assign(var, best_val, self.assignment)
             
         self.status = "FAILURE"
         return None

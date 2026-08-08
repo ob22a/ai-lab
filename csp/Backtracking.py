@@ -34,13 +34,14 @@ class BacktrackingSolver(CSPSolver):
         self.on_unassign = None
 
     def solve(self) -> Dict[Any, Any]:
-        # Initialize current domains with full domains
+        self.reset()
         current_domains = {var: list(values) for var, values in self.problem.domains.items()}
         result = self.backtrack(self.assignment, current_domains)
         if result is None:
             self.status = "FAILURE"
         else:
             self.status = "SUCCESS"
+            self.assignment = result
         return result
 
     def backtrack(self, assignment: Dict[Any, Any], current_domains: Dict[Any, List[Any]]) -> Dict[Any, Any]:

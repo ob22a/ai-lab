@@ -21,6 +21,7 @@ class BackjumpingSolver(BacktrackingSolver):
         self.assignment_order: List[Any] = []
 
     def solve(self) -> Dict[Any, Any]:
+        self.reset()
         self.conflict_sets = {v: set() for v in self.problem.variables}
         self.assignment_order = []
         current_domains = {var: list(values) for var, values in self.problem.domains.items()}
@@ -29,6 +30,7 @@ class BackjumpingSolver(BacktrackingSolver):
         result = self.solve_jump(self.assignment, current_domains)
         if isinstance(result, dict):
             self.status = "SUCCESS"
+            self.assignment = result
             return result
         else:
             self.status = "FAILURE"
