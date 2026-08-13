@@ -1,0 +1,5 @@
+Label,Success,Best Objective / Tour Distance,Nodes Expanded,Nodes Generated,Runtime (s),Runtime Std,Max Frontier,Runs
+Hill Climbing / TSP (20 Cities),True,3.18,19,3610,0.006484,0.000388,1,30
+Simulated Annealing / TSP (20 Cities),True,3.21,883,3717,0.021164,0.000223,1,30
+Local Beam (k=5) / TSP (20 Cities),True,3.18,70,13185,0.028939,0.003062,1,30
+Genetic Algorithm / TSP (20 Cities),True,3.18,14400,14701,0.164461,0.00282,1,30

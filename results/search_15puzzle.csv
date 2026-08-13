@@ -1,0 +1,13 @@
+Label,Success,Path Cost,Nodes Expanded,Nodes Generated,Runtime (s),Runtime Std,Max Frontier,Runs
+GBFS / 15pzl medium,True,7,8,17,0.00151,0.000333,11,30
+A* / 15pzl medium,True,7,8,16,0.001434,0.000169,10,30
+IDA* / 15pzl medium,True,7,7,8,0.001416,0.000188,8,30
+RBFS / 15pzl medium,True,7.0,7,23,0.001648,0.00055,4,30
+SMA*(1000) / 15pzl medium,True,7.0,15,16,0.001765,0.000371,13,30
+Bidir-A* / 15pzl medium,True,7.0,20,46,0.001976,0.000238,28,30
+GBFS / 15pzl hard,True,63,141,309,0.009384,0.002746,170,30
+A* / 15pzl hard,True,19,23,50,0.002135,0.000791,29,30
+IDA* / 15pzl hard,True,19,26,30,0.001948,0.000401,24,30
+RBFS / 15pzl hard,True,19.0,29,96,0.001772,6.8e-05,4,30
+SMA*(1000) / 15pzl hard,True,19.0,40,41,0.003171,0.000624,31,30
+Bidir-A* / 15pzl hard,True,19.0,2022,4139,0.087833,0.018707,2119,30
