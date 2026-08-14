@@ -1,3 +1,17 @@
+"""
+demo/and_or_vacuum.py
+AND-OR Search in Vacuum World Demo.
+
+Demonstrates AND-OR graph search for contingency planning in both
+deterministic and stochastic (slippery) vacuum world environments.
+
+Usage:
+    python -m demo.and_or_vacuum [--vis]
+
+Note: Vacuum World runs in console mode only (no visualizer).
+"""
+
+import argparse
 from domains.vacuum.VacuumWorld import VacuumWorld
 from search.online.ANDORSearch import ANDORSearch
 
@@ -18,6 +32,14 @@ def print_plan(plan, indent=""):
 
 
 def main():
+    parser = argparse.ArgumentParser(description="AND-OR Search in Vacuum World")
+    parser.add_argument("--vis", action="store_true", help="Launch visualizer (not available for Vacuum World)")
+    args = parser.parse_args()
+
+    if args.vis:
+        print("Note: Vacuum World runs in console mode only (no visualizer).")
+        print("Continuing with console output...\n")
+
     print("--- AND-OR Search in Vacuum World ---")
     
     width, height = 2, 1

@@ -32,7 +32,7 @@ AVG_TOUR_COLOR = (240, 160, 60)
 GRAPH_BG = (20, 26, 42)
 BUTTON_BG = (40, 50, 75)
 BUTTON_ACTIVE = (70, 140, 230)
-
+CYAN=(0,255,255)
 
 class TSPVisualizer:
     def __init__(self, num_cities: int = 20, solver_class=None, fps: int = 30):

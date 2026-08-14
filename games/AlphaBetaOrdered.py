@@ -44,14 +44,10 @@ class AlphaBetaOrderedSolver(GameSolver):
         return actions
     
     def _check_timeout(self):
-        # We don't check time on literally every node to save overhead, 
-        # but every 1000 nodes is extremely safe.
         if self.time_limit is not None and self.start_time is not None:
-            if self.nodes_expanded % 1000 == 0:
-                if time.time() - self.start_time > self.time_limit:
-                    # Import locally to avoid circular dependency
-                    from games.IterativeDeepening import TimeoutException
-                    raise TimeoutException()
+            if time.time() - self.start_time >= self.time_limit:
+                from games.IterativeDeepening import TimeoutException
+                raise TimeoutException()
                     
     def get_best_action(self, state: GameState, is_iterative: bool = False) -> Any:
         self.nodes_expanded = 0

@@ -2,23 +2,34 @@
 benchmarks/benchmark.py — Reusable multi-run process-isolated benchmark engine.
 
 Usage:
-    from benchmarks.benchmark import Benchmark, BenchmarkEntry
+    from benchmarks.benchmark import Benchmark, BenchmarkEntry, append_result_to_csv
     entries = [
         BenchmarkEntry(label="A* / 8-puzzle easy", algo_class=AStar, algo_kwargs={}, problem=p1),
-        BenchmarkEntry(label="IDA* / 8-puzzle easy", algo_class=IDAStar, algo_kwargs={}, problem=p2),
     ]
-    Benchmark(entries).run(csv_path="results/search_benchmark.csv", num_runs=30, timeout=10.0)
+    Benchmark(entries).run(csv_path="results/search_8puzzle.csv", num_runs=30, timeout=20.0)
 """
 
 import csv
 import copy
-import time
 import math
 import multiprocessing
-from dataclasses import dataclass
-from typing import Any, List, Optional
+import os
+import time
+from collections import defaultdict
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional, Tuple
 
 from core.result import Result
+
+RAW_COLUMNS = [
+    "Label", "Run#", "Success", "Path Cost",
+    "Nodes Expanded", "Nodes Generated",
+    "Runtime (s)", "Max Frontier", "Timestamp",
+]
+
+# Backward-compatible alias used by some benchmark scripts
+_COLUMNS = RAW_COLUMNS
 
 
 @dataclass
@@ -26,7 +37,7 @@ class BenchmarkEntry:
     label: str
     algo_class: type
     problem: Any
-    algo_kwargs: dict = None   # extra kwargs forwarded to algo_class(problem, **kwargs)
+    algo_kwargs: dict = field(default_factory=dict)
 
 
 @dataclass
@@ -42,27 +53,133 @@ class BenchmarkResult:
     runs_count: int = 1
 
 
-_COLUMNS = [
-    "Label", "Success", "Path Cost",
-    "Nodes Expanded", "Nodes Generated",
-    "Runtime (s)", "Runtime Std", "Max Frontier", "Runs"
-]
+def _worker(algo_class: type, problem: Any, algo_kwargs: dict, result_queue: multiprocessing.Queue):
+    """Run one algorithm instance inside an isolated child process."""
+    import sys
 
-
-def _worker_process_target(entry: BenchmarkEntry, queue: multiprocessing.Queue):
-    """Worker process target that runs an algorithm instance isolated from main process."""
+    sys.setrecursionlimit(20000)
     try:
-        p_copy = copy.deepcopy(entry.problem)
-        kwargs = entry.algo_kwargs or {}
+        p_copy = copy.deepcopy(problem)
+        kwargs = algo_kwargs or {}
         t0 = time.perf_counter()
-        algo = entry.algo_class(p_copy, **kwargs)
+        algo = algo_class(p_copy, **kwargs)
         res = algo.run()
         elapsed = time.perf_counter() - t0
         if res:
             res.runtime = elapsed
-        queue.put((True, res, None))
-    except Exception as ex:
-        queue.put((False, None, str(ex)))
+        result_queue.put(("ok", res))
+    except Exception as exc:
+        result_queue.put(("error", str(exc)))
+
+
+def _run_single_entry(entry: BenchmarkEntry, timeout: float) -> Tuple[Optional[Result], float]:
+    """Run one benchmark entry in a child process with a hard timeout."""
+    ctx = multiprocessing.get_context("spawn")
+    result_queue: multiprocessing.Queue = ctx.Queue()
+    process = ctx.Process(
+        target=_worker,
+        args=(entry.algo_class, entry.problem, entry.algo_kwargs or {}, result_queue),
+    )
+    process.start()
+    process.join(timeout)
+
+    if process.is_alive():
+        process.terminate()
+        process.join(1.0)
+        if process.is_alive():
+            process.kill()
+            process.join(1.0)
+        return None, timeout
+
+    if result_queue.empty():
+        return None, timeout
+
+    status, payload = result_queue.get_nowait()
+    if status == "error":
+        return Result(success=False, runtime=timeout), timeout
+    return payload, getattr(payload, "runtime", timeout) if payload else timeout
+
+
+def append_result_to_csv(
+    csv_path: str,
+    label: str,
+    run_num: int,
+    result: Optional[Result],
+    *,
+    reset: bool = False,
+) -> None:
+    """Append a single raw run row to a benchmark CSV."""
+    os.makedirs(os.path.dirname(csv_path) or ".", exist_ok=True)
+    write_header = reset or not os.path.exists(csv_path) or os.path.getsize(csv_path) == 0
+    mode = "w" if reset else "a"
+
+    if result is None:
+        row = [label, run_num, False, 0.0, 0, 0, 0.0, 0, _timestamp()]
+    else:
+        row = [
+            label,
+            run_num,
+            result.success,
+            result.path_cost,
+            result.nodes_expanded,
+            result.nodes_generated,
+            round(result.runtime, 6),
+            result.max_frontier_size,
+            _timestamp(),
+        ]
+
+    with open(csv_path, mode, newline="") as f:
+        writer = csv.writer(f)
+        if write_header:
+            writer.writerow(RAW_COLUMNS)
+        writer.writerow(row)
+
+
+def aggregate_raw_rows(rows: List[List[str]]) -> List[BenchmarkResult]:
+    """Aggregate per-run CSV rows into summary BenchmarkResult objects."""
+    groups: Dict[str, List[List[str]]] = defaultdict(list)
+    for row in rows:
+        if row:
+            groups[row[0]].append(row)
+
+    summaries: List[BenchmarkResult] = []
+    for label, group in sorted(groups.items()):
+        successes = [r[2].strip().lower() in ("true", "1") for r in group]
+        runtimes = [float(r[6]) for r in group if r[2].strip().lower() in ("true", "1")]
+        mean_runtime = sum(runtimes) / len(runtimes) if runtimes else float(group[-1][6])
+        std_runtime = (
+            math.sqrt(sum((x - mean_runtime) ** 2 for x in runtimes) / len(runtimes))
+            if len(runtimes) > 1
+            else 0.0
+        )
+        last = group[-1]
+        summaries.append(
+            BenchmarkResult(
+                label=label,
+                success=any(successes),
+                path_cost=float(last[3]),
+                nodes_expanded=int(float(last[4])),
+                nodes_generated=int(float(last[5])),
+                runtime=mean_runtime,
+                runtime_std=std_runtime,
+                max_frontier_size=int(float(last[7])),
+                runs_count=len(group),
+            )
+        )
+    return summaries
+
+
+def read_raw_csv(filepath: str) -> List[List[str]]:
+    if not os.path.exists(filepath):
+        return []
+    with open(filepath, newline="") as f:
+        reader = csv.reader(f)
+        next(reader, None)
+        return [r for r in reader if r]
+
+
+def _timestamp() -> str:
+    return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
 class Benchmark:
@@ -70,138 +187,104 @@ class Benchmark:
         self.entries = entries
         self.results: List[BenchmarkResult] = []
 
-    def run(self, csv_path: Optional[str] = None, num_runs: int = 1, timeout: float = 10.0, verbose: bool = True) -> List[BenchmarkResult]:
+    def run(
+        self,
+        csv_path: Optional[str] = None,
+        num_runs: int = 1,
+        timeout: float = 10.0,
+        verbose: bool = True,
+        reset: bool = False,
+        algo_filter: Optional[List[str]] = None,
+    ) -> List[BenchmarkResult]:
         self.results.clear()
+        raw_rows: List[List[str]] = []
 
-        for entry in self.entries:
-            kwargs = entry.algo_kwargs or {}
-            runtimes = []
-            last_result = None
-            actual_executed_runs = 0
+        entries = self.entries
+        if algo_filter:
+            filt = {a.strip().lower() for a in algo_filter}
+            entries = [e for e in entries if any(f in e.label.lower() for f in filt)]
 
-            actual_runs = num_runs
+        first_write = reset
+        for entry in entries:
+            actual_runs = max(1, num_runs)
+            runtimes: List[float] = []
+            last_result: Optional[Result] = None
 
             for r in range(actual_runs):
-                actual_executed_runs += 1
-                queue = multiprocessing.Queue()
-                proc = multiprocessing.Process(target=_worker_process_target, args=(entry, queue), daemon=True)
-                
-                t0 = time.perf_counter()
-                proc.start()
-                proc.join(timeout=timeout)
-                elapsed = time.perf_counter() - t0
+                res, elapsed = _run_single_entry(entry, timeout)
+                if res is None:
+                    res = Result(success=False, runtime=timeout)
+                    elapsed = timeout
 
-                if proc.is_alive():
-                    # Process timed out: terminate forcefully to free RAM
-                    proc.terminate()
-                    proc.join(timeout=1.0)
-                    if proc.is_alive():
-                        proc.kill()
-                    last_result = Result(success=False, runtime=timeout)
-                    if verbose:
-                        print(f"  TIMEOUT [{entry.label}] (>{timeout:.1f}s)")
-                    break
+                last_result = res
+                if res.success:
+                    runtimes.append(res.runtime)
 
-                # Extract result from queue
-                if not queue.empty():
-                    success_flag, res, err_msg = queue.get()
-                    if err_msg:
-                        last_result = Result(success=False, runtime=elapsed)
-                        if verbose and r == 0:
-                            print(f"  ERROR [{entry.label}]: {err_msg}")
-                        break
-                    if res:
-                        last_result = res
-                        if res.success:
-                            runtimes.append(res.runtime)
-                else:
-                    last_result = Result(success=False, runtime=elapsed)
+                if csv_path:
+                    append_result_to_csv(csv_path, entry.label, r + 1, res, reset=first_write)
+                    first_write = False
+                raw_rows.append([
+                    entry.label, str(r + 1), str(res.success), str(res.path_cost),
+                    str(res.nodes_expanded), str(res.nodes_generated),
+                    str(round(res.runtime, 6)), str(res.max_frontier_size), _timestamp(),
+                ])
 
-                # Adaptive scaling for very fast vs slow runs to prevent long benchmark delays
-                if r == 0 and elapsed > 1.0 and actual_runs > 3:
-                    actual_runs = min(num_runs, 3)
+                if verbose and not res.success and r == 0:
+                    print(f"  FAIL/TIMEOUT [{entry.label}] ({elapsed:.2f}s)")
+
+                # Adaptive scaling: relative threshold based on timeout
+                if r == 0 and elapsed > timeout / 2 and actual_runs > 5:
+                    print(
+                        f"[INFO] Adaptive scaling: reducing runs from {num_runs} to 5 "
+                        f"for '{entry.label}' (first run took {elapsed:.2f}s)"
+                    )
+                    actual_runs = min(num_runs, 5)
 
             if not last_result:
                 last_result = Result(success=False, runtime=0.0)
 
             mean_runtime = sum(runtimes) / len(runtimes) if runtimes else last_result.runtime
-            std_runtime = math.sqrt(sum((x - mean_runtime)**2 for x in runtimes) / len(runtimes)) if len(runtimes) > 1 else 0.0
-
-            br = BenchmarkResult(
-                label=entry.label,
-                success=last_result.success,
-                path_cost=last_result.path_cost,
-                nodes_expanded=last_result.nodes_expanded,
-                nodes_generated=last_result.nodes_generated,
-                runtime=mean_runtime,
-                runtime_std=std_runtime,
-                max_frontier_size=last_result.max_frontier_size,
-                runs_count=actual_executed_runs
+            std_runtime = (
+                math.sqrt(sum((x - mean_runtime) ** 2 for x in runtimes) / len(runtimes))
+                if len(runtimes) > 1
+                else 0.0
             )
-            self.results.append(br)
+            self.results.append(
+                BenchmarkResult(
+                    label=entry.label,
+                    success=last_result.success,
+                    path_cost=last_result.path_cost,
+                    nodes_expanded=last_result.nodes_expanded,
+                    nodes_generated=last_result.nodes_generated,
+                    runtime=mean_runtime,
+                    runtime_std=std_runtime,
+                    max_frontier_size=last_result.max_frontier_size,
+                    runs_count=actual_runs,
+                )
+            )
 
         if verbose:
             self._print_table()
 
         if csv_path:
-            self._save_csv(csv_path)
+            print(f"Saved raw runs -> {csv_path}")
 
         return self.results
 
     def _print_table(self):
         if not self.results:
             return
-
-        col_widths = [max(len(c), max((len(str(getattr(r, _field_for(c)))) for r in self.results), default=0))
-                      for c in _COLUMNS]
-
-        header = "  ".join(c.ljust(w) for c, w in zip(_COLUMNS, col_widths))
-        separator = "  ".join("-" * w for w in col_widths)
+        cols = ["Label", "Success", "Path Cost", "Nodes Expanded", "Runtime (s)", "Runs"]
+        widths = [max(len(c), max(len(str(getattr(r, k))) for r in self.results)) for c, k in zip(
+            cols, ["label", "success", "path_cost", "nodes_expanded", "runtime", "runs_count"]
+        )]
+        header = "  ".join(c.ljust(w) for c, w in zip(cols, widths))
         print("\n" + header)
-        print(separator)
-
+        print("  ".join("-" * w for w in widths))
         for r in self.results:
             row = [
-                r.label,
-                str(r.success),
-                f"{r.path_cost:.1f}",
-                str(r.nodes_expanded),
-                str(r.nodes_generated),
-                f"{r.runtime:.5f}",
-                f"{r.runtime_std:.5f}",
-                str(r.max_frontier_size),
-                str(r.runs_count)
+                r.label, str(r.success), f"{r.path_cost:.1f}",
+                str(r.nodes_expanded), f"{r.runtime:.5f}", str(r.runs_count),
             ]
-            print("  ".join(v.ljust(w) for v, w in zip(row, col_widths)))
+            print("  ".join(v.ljust(w) for v, w in zip(row, widths)))
         print()
-
-    def _save_csv(self, path: str):
-        import os
-        os.makedirs(os.path.dirname(path), exist_ok=True) if os.path.dirname(path) else None
-        with open(path, "w", newline="") as f:
-            writer = csv.writer(f)
-            writer.writerow(_COLUMNS)
-            for r in self.results:
-                writer.writerow([
-                    r.label, r.success, r.path_cost,
-                    r.nodes_expanded, r.nodes_generated,
-                    round(r.runtime, 6), round(r.runtime_std, 6),
-                    r.max_frontier_size, r.runs_count
-                ])
-        print(f"Saved -> {path}")
-
-
-def _field_for(col: str) -> str:
-    mapping = {
-        "Label": "label",
-        "Success": "success",
-        "Path Cost": "path_cost",
-        "Nodes Expanded": "nodes_expanded",
-        "Nodes Generated": "nodes_generated",
-        "Runtime (s)": "runtime",
-        "Runtime Std": "runtime_std",
-        "Max Frontier": "max_frontier_size",
-        "Runs": "runs_count"
-    }
-    return mapping[col]
-

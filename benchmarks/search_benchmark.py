@@ -13,15 +13,12 @@ Outputs saved to separate CSV files:
 """
 
 import argparse
-import copy
-import csv
 import os
 import sys
-import time
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from benchmarks.benchmark import Benchmark, BenchmarkEntry, BenchmarkResult, _COLUMNS
+from benchmarks.benchmark import Benchmark, BenchmarkEntry
 
 from domains.n_puzzle.NPuzzle import NPuzzle
 from domains.n_puzzle.NPuzzleGenerator import NPuzzleGenerator
@@ -44,13 +41,13 @@ from search.informed.SMAstar import SMAStar
 from search.informed.IGBFS import IGBFS
 from search.informed.BidirectionalAStar import BidirectionalAStar
 
-TIMEOUT_S = 45
+SEARCH_TIMEOUT_S = 20.0
 
 UNINFORMED = [
     ("DFS",           DFS,                 {}),
     ("BFS",           BFS,                 {}),
     ("UCS",           UCS,                 {}),
-    ("IDDFS",         IDDFS,               {"visualize": False}),
+    ("IDDFS",         IDDFS,               {"visualize": False, "max_depth": 20}),
     ("Bidir-Search",  BidirectionalSearch, {}),
 ]
 
@@ -67,9 +64,9 @@ INFORMED_WITH_IGBFS = INFORMED + [("IGBFS", IGBFS, {})]
 ALL_ALGOS = UNINFORMED + INFORMED_WITH_IGBFS
 
 
-def make_8puzzle(generator, moves, pdb_8):
+def make_8puzzle(generator, moves, pdb_8, heuristic_type="pattern_db"):
     state = generator.generate(moves=moves)
-    return NPuzzleProblem(state, NPuzzle(3), heuristic_type="pattern_db", pdbs=pdb_8)
+    return NPuzzleProblem(state, NPuzzle(3), heuristic_type=heuristic_type, pdbs=pdb_8)
 
 
 def make_15puzzle(generator, moves, pdb_15):
@@ -77,34 +74,22 @@ def make_15puzzle(generator, moves, pdb_15):
     return NPuzzleProblem(state, NPuzzle(4), heuristic_type="pattern_db", pdbs=pdb_15)
 
 
-def make_maze(rows, cols):
+def make_maze(rows, cols, heuristic_type="Manhatten"):
     maze = RandomizedKruskalGenerator(rows=rows, cols=cols).generate()
-    return MazeSearchProblem(maze, (0, 0), (rows - 1, cols - 1))
+    return MazeSearchProblem(maze, (0, 0), (rows - 1, cols - 1), heuristic_type=heuristic_type)
 
 
-def run_benchmark_for_group(entries, num_runs=30):
-    runner = Benchmark(entries)
-    return runner.run(num_runs=num_runs, verbose=False)
+def _filter_algos(algo_list, algo_filter):
+    if not algo_filter:
+        return algo_list
+    filt = {a.strip().lower() for a in algo_filter}
+    return [(n, c, k) for n, c, k in algo_list if any(f in n.lower() for f in filt)]
 
 
-def save_domain_csv(results, csv_path):
-    os.makedirs(os.path.dirname(csv_path), exist_ok=True)
-    with open(csv_path, "w", newline="") as f:
-        writer = csv.writer(f)
-        writer.writerow(_COLUMNS)
-        for r in results:
-            writer.writerow([
-                r.label, r.success, r.path_cost,
-                r.nodes_expanded, r.nodes_generated,
-                round(r.runtime, 6), round(r.runtime_std, 6),
-                r.max_frontier_size, r.runs_count
-            ])
-    print(f"Saved domain benchmark -> {csv_path}")
-
-
-def main(num_runs=30,domains=['8pzl','15pzl','maze']):
+def main(num_runs=30, domains=None, algo_filter=None, reset=False):
     import random
     random.seed(2026)
+    domains = domains or ["8pzl", "15pzl", "maze"]
 
     print("Loading Pattern Databases...")
     pdb_8 = [
@@ -117,47 +102,84 @@ def main(num_runs=30,domains=['8pzl','15pzl','maze']):
         PatternDatabase("./pdbs/15puzzle_bcdef.bin"),
     ]
 
-    gen_8  = NPuzzleGenerator(3)
+    gen_8 = NPuzzleGenerator(3)
     gen_15 = NPuzzleGenerator(4)
+    filtered = _filter_algos(ALL_ALGOS, algo_filter)
 
-    if '8pzl' in domains:
-        # 1. 8-Puzzle Domain
+    if "8pzl" in domains:
         print(f"\n=== Running 8-Puzzle Benchmark ({num_runs} runs) ===")
         p8_entries = []
-        for diff_label, moves in [("8pzl easy", 8), ("8pzl medium", 18), ("8pzl hard", 28)]:
-            base_prob = make_8puzzle(gen_8, moves, pdb_8)
-            for name, cls, kwargs in ALL_ALGOS:
+        for diff_label, moves, algos, h_type in [
+            ("8pzl easy", 8, filtered, "misplaced"),
+            ("8pzl medium", 18, filtered, "pattern_db"),
+            ("8pzl hard", 28, _filter_algos(INFORMED_WITH_IGBFS, algo_filter), "pattern_db"),
+        ]:
+            base_prob = make_8puzzle(gen_8, moves, pdb_8, heuristic_type=h_type)
+            for name, cls, kwargs in algos:
                 p8_entries.append(BenchmarkEntry(label=f"{name} / {diff_label}", algo_class=cls, problem=base_prob, algo_kwargs=kwargs))
-        p8_res = run_benchmark_for_group(p8_entries, num_runs=num_runs)
-        save_domain_csv(p8_res, "results/search_8puzzle.csv")
 
-    if '15pzl' in domains:
-        # 2. 15-Puzzle Domain
+        # Heuristic comparison on 8-puzzle medium
+        for h in ("misplaced", "manhattan", "pattern_db"):
+            prob = make_8puzzle(gen_8, 18, pdb_8, heuristic_type=h)
+            for name, cls, kwargs in _filter_algos([("A*", AStar, {}), ("IDA*", IDAStar, {})], algo_filter):
+                p8_entries.append(BenchmarkEntry(label=f"{name} ({h}) / 8pzl medium", algo_class=cls, problem=prob, algo_kwargs=kwargs))
+
+        Benchmark(p8_entries).run(
+            csv_path="results/search_8puzzle.csv",
+            num_runs=num_runs,
+            timeout=SEARCH_TIMEOUT_S,
+            verbose=True,
+            reset=reset,
+            algo_filter=algo_filter,
+        )
+
+    if "15pzl" in domains:
         print(f"\n=== Running 15-Puzzle Benchmark ({num_runs} runs) ===")
         p15_entries = []
-        for diff_label, moves in [("15pzl medium", 25), ("15pzl hard", 45), ("15pzl complex", 90)]:
+        for diff_label, moves in [("15pzl medium", 25), ("15pzl hard", 45)]:
             base_prob = make_15puzzle(gen_15, moves, pdb_15)
-            for name, cls, kwargs in INFORMED:
+            for name, cls, kwargs in _filter_algos(INFORMED_WITH_IGBFS, algo_filter):
                 p15_entries.append(BenchmarkEntry(label=f"{name} / {diff_label}", algo_class=cls, problem=base_prob, algo_kwargs=kwargs))
-        p15_res = run_benchmark_for_group(p15_entries, num_runs=num_runs)
-        save_domain_csv(p15_res, "results/search_15puzzle.csv")
+        Benchmark(p15_entries).run(
+            csv_path="results/search_15puzzle.csv",
+            num_runs=num_runs,
+            timeout=SEARCH_TIMEOUT_S,
+            verbose=True,
+            reset=reset,
+            algo_filter=algo_filter,
+        )
 
-    if 'maze' in domains:
-        # 3. Maze Domain
+    if "maze" in domains:
         print(f"\n=== Running Maze Benchmark ({num_runs} runs) ===")
         maze_entries = []
         for rows, cols in [(10, 10), (30, 30), (50, 50)]:
             base_prob = make_maze(rows, cols)
-            for name, cls, kwargs in ALL_ALGOS:
+            for name, cls, kwargs in filtered:
                 maze_entries.append(BenchmarkEntry(label=f"{name} / maze {rows}x{cols}", algo_class=cls, problem=base_prob, algo_kwargs=kwargs))
-        maze_res = run_benchmark_for_group(maze_entries, num_runs=num_runs)
-        save_domain_csv(maze_res, "results/search_maze.csv")
+
+        # Maze heuristic comparison on 30x30
+        for h_label, h_type in [("manhattan", "Manhatten"), ("euclidean", "Euclidean")]:
+            prob = make_maze(30, 30, heuristic_type=h_type)
+            for name, cls, kwargs in _filter_algos([("A*", AStar, {})], algo_filter):
+                maze_entries.append(BenchmarkEntry(label=f"{name} ({h_label}) / maze 30x30", algo_class=cls, problem=prob, algo_kwargs=kwargs))
+
+        Benchmark(maze_entries).run(
+            csv_path="results/search_maze.csv",
+            num_runs=num_runs,
+            timeout=SEARCH_TIMEOUT_S,
+            verbose=True,
+            reset=reset,
+            algo_filter=algo_filter,
+        )
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--runs", type=int, default=30, help="Number of runs per algorithm (default: 30)")
-    parser.add_argument("--domains", type=str, default="8pzl,15pzl,maze", help="Comma-separated domains to run (8pzl,15pzl,maze)")
+    parser.add_argument("--domains", type=str, default="8pzl,15pzl,maze", help="Comma-separated domains (8pzl,15pzl,maze)")
+    parser.add_argument("--algos", type=str, default="", help="Comma-separated algorithm name filter")
+    parser.add_argument("--reset", action="store_true", help="Clear existing CSV before writing")
     args = parser.parse_args()
     domain_list = [d.strip() for d in args.domains.split(",") if d.strip()]
-    main(num_runs=args.runs, domains=domain_list)
+    algo_list = [a.strip() for a in args.algos.split(",") if a.strip()] or None
+    main(num_runs=args.runs, domains=domain_list, algo_filter=algo_list, reset=args.reset)

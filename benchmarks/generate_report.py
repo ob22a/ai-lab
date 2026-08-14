@@ -331,62 +331,140 @@ def generate_reports_and_charts():
         plt.close()
         print("  [OK] Saved reports/figures/nqueens_local_comparison.png")
 
-    # 5. CSP Benchmark Comparison Chart (Pruning & Execution Speed)
+    # 5. CSP Benchmark Comparison Chart (from raw per-run CSV format)
     csv_csp = read_csv_data("results/csp_benchmarks.csv")
     if csv_csp:
-        nq_row = next((r for r in csv_csp if r[0] == "8-Queens"), None)
-        if nq_row:
-            csp_configs = ["BT (Naive)", "BT + MRV", "BT + FC", "BT + MAC", "Min-Conflicts"]
-            def parse_nodes(val_str):
-                try:
-                    return int(val_str.split()[0])
-                except:
-                    return 0
+        # Aggregate raw rows by label: group by Label, compute mean nodes and mean runtime
+        from collections import defaultdict
+        csp_groups = defaultdict(list)
+        for r in csv_csp:
+            if len(r) >= 7:
+                csp_groups[r[0]].append(r)
 
-            def parse_time_ms(val_str):
-                try:
-                    # e.g., "876 nodes (0.0032s)" -> 0.0032 * 1000 = 3.2 ms
-                    start = val_str.index("(") + 1
-                    end = val_str.index("s)")
-                    return float(val_str[start:end]) * 1000.0
-                except:
-                    return 0.0
+        # Extract 8-Queens entries for the main chart
+        csp_labels = []
+        csp_nodes = []
+        csp_times_ms = []
+        for label, rows in sorted(csp_groups.items()):
+            if "8-Queens" in label:
+                solver_name = label.split("/")[0].strip()
+                successful_rows = [r for r in rows if r[2].strip().lower() in ("true", "1")]
+                if successful_rows:
+                    avg_nodes = sum(int(float(r[4])) for r in successful_rows) / len(successful_rows)
+                    avg_time = sum(float(r[6]) for r in successful_rows) / len(successful_rows) * 1000.0
+                else:
+                    avg_nodes = 0
+                    avg_time = 0
+                csp_labels.append(solver_name)
+                csp_nodes.append(avg_nodes)
+                csp_times_ms.append(avg_time)
 
-            nodes_8queens = [parse_nodes(val) for val in nq_row[1:]]
-            times_8queens_ms = [parse_time_ms(val) for val in nq_row[1:]]
-
-            # Nodes Pruned Chart
-            fig, ax = plt.subplots(figsize=(10, 6))
-            x = np.arange(len(csp_configs))
-            bars = ax.bar(x, nodes_8queens, color=['#C44E52', '#DD8452', '#4C72B0', '#55A868', '#8172B3'])
-            ax.set_ylabel('Nodes / Steps to Solve')
-            ax.set_title('8-Queens CSP Solver Performance (Search Tree Pruning)')
+        if csp_labels:
+            # Nodes Chart
+            fig, ax = plt.subplots(figsize=(12, 6))
+            x = np.arange(len(csp_labels))
+            colors = ['#C44E52', '#DD8452', '#4C72B0', '#55A868', '#8172B3', '#CCB974',
+                       '#64B5CD', '#E377C2', '#7F7F7F', '#BCBD22', '#17BECF', '#AEC7E8']
+            bars = ax.bar(x, csp_nodes, color=colors[:len(csp_labels)])
+            ax.set_ylabel('Avg Nodes Expanded')
+            ax.set_title('8-Queens CSP Solver Comparison: Nodes Expanded')
             ax.set_xticks(x)
-            ax.set_xticklabels(csp_configs)
+            ax.set_xticklabels(csp_labels, rotation=25, ha='right')
             ax.grid(axis='y', linestyle='--', alpha=0.7)
-            annotate_bars(ax, bars, fontsize=9)
+            annotate_bars(ax, bars, fontsize=8)
             plt.tight_layout()
             plt.savefig("reports/figures/csp_benchmark_summary.png", dpi=300)
             plt.close()
             print("  [OK] Saved reports/figures/csp_benchmark_summary.png")
 
-            # Runtime Execution Speed Chart (in ms)
-            fig, ax = plt.subplots(figsize=(10, 6))
-            bars = ax.bar(x, times_8queens_ms, color=['#C44E52', '#DD8452', '#4C72B0', '#55A868', '#8172B3'])
-            ax.set_ylabel('Execution Time (ms)')
+            # Runtime Chart
+            fig, ax = plt.subplots(figsize=(12, 6))
+            bars = ax.bar(x, csp_times_ms, color=colors[:len(csp_labels)])
+            ax.set_ylabel('Avg Execution Time (ms)')
             ax.set_title('8-Queens CSP Solver Execution Speed (ms)')
             ax.set_xticks(x)
-            ax.set_xticklabels(csp_configs)
+            ax.set_xticklabels(csp_labels, rotation=25, ha='right')
             ax.grid(axis='y', linestyle='--', alpha=0.7)
             for bar in bars:
                 h = bar.get_height()
                 if h > 0:
                     ax.annotate(f"{h:.2f}ms", xy=(bar.get_x() + bar.get_width() / 2, h),
-                                xytext=(0, 3), textcoords="offset points", ha='center', va='bottom', fontsize=9, fontweight='bold')
+                                xytext=(0, 3), textcoords="offset points", ha='center', va='bottom', fontsize=8, fontweight='bold')
             plt.tight_layout()
             plt.savefig("reports/figures/csp_runtime_summary.png", dpi=300)
             plt.close()
             print("  [OK] Saved reports/figures/csp_runtime_summary.png")
+
+        # CSP Cross-Domain Grouped Bar Chart
+        csp_domains_set = sorted(set(label.split("/")[1].strip() for label in csp_groups.keys() if "/" in label))
+        csp_solvers_set = sorted(set(label.split("/")[0].strip() for label in csp_groups.keys() if "/" in label))
+        if len(csp_domains_set) > 1 and len(csp_solvers_set) > 1:
+            fig, ax = plt.subplots(figsize=(14, 7))
+            x = np.arange(len(csp_solvers_set))
+            width = 0.8 / max(1, len(csp_domains_set))
+            domain_colors = ['#4C72B0', '#55A868', '#DD8452', '#C44E52', '#8172B3']
+
+            for i, domain in enumerate(csp_domains_set):
+                nodes_list = []
+                for solver in csp_solvers_set:
+                    label_key = f"{solver} / {domain}"
+                    if label_key in csp_groups:
+                        successful = [r for r in csp_groups[label_key] if r[2].strip().lower() in ("true", "1")]
+                        avg_n = sum(int(float(r[4])) for r in successful) / len(successful) if successful else 0
+                    else:
+                        avg_n = 0
+                    nodes_list.append(avg_n)
+                offset = (i - len(csp_domains_set) / 2 + 0.5) * width
+                ax.bar(x + offset, nodes_list, width, label=domain, color=domain_colors[i % len(domain_colors)])
+
+            ax.set_yscale('log')
+            ax.set_ylabel('Avg Nodes Expanded (Log Scale)')
+            ax.set_title('CSP Solver Comparison Across All Domains')
+            ax.set_xticks(x)
+            ax.set_xticklabels(csp_solvers_set, rotation=30, ha='right')
+            ax.legend(fontsize=8)
+            ax.grid(axis='y', linestyle='--', alpha=0.7)
+            plt.tight_layout()
+            plt.savefig("reports/figures/csp_cross_domain.png", dpi=300)
+            plt.close()
+            print("  [OK] Saved reports/figures/csp_cross_domain.png")
+
+    # 5b. Heuristic Comparison Chart (A* on 8-puzzle: misplaced vs manhattan vs pattern_db)
+    if csv_8p:
+        heuristic_rows = [r for r in csv_8p if "(" in r[0] and "8pzl medium" in r[0]]
+        if heuristic_rows:
+            h_labels = [r[0].split("/")[0].strip() for r in heuristic_rows]
+            h_nodes = [int(float(r[4])) for r in heuristic_rows]
+            h_times = [float(r[6]) * 1000.0 for r in heuristic_rows]
+
+            fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
+            x = np.arange(len(h_labels))
+            colors_h = ['#C44E52', '#DD8452', '#55A868', '#4C72B0', '#8172B3', '#CCB974']
+
+            bars1 = ax1.bar(x, h_nodes, color=colors_h[:len(h_labels)])
+            ax1.set_ylabel('Nodes Expanded')
+            ax1.set_title('Heuristic Comparison: Nodes Expanded (8-Puzzle Medium)')
+            ax1.set_xticks(x)
+            ax1.set_xticklabels(h_labels, rotation=20, ha='right')
+            ax1.grid(axis='y', linestyle='--', alpha=0.7)
+            annotate_bars(ax1, bars1, fontsize=8)
+
+            bars2 = ax2.bar(x, h_times, color=colors_h[:len(h_labels)])
+            ax2.set_ylabel('Runtime (ms)')
+            ax2.set_title('Heuristic Comparison: Runtime (8-Puzzle Medium)')
+            ax2.set_xticks(x)
+            ax2.set_xticklabels(h_labels, rotation=20, ha='right')
+            ax2.grid(axis='y', linestyle='--', alpha=0.7)
+            for bar in bars2:
+                h = bar.get_height()
+                if h > 0:
+                    ax2.annotate(f"{h:.2f}ms", xy=(bar.get_x() + bar.get_width() / 2, h),
+                                xytext=(0, 3), textcoords="offset points", ha='center', va='bottom', fontsize=8, fontweight='bold')
+
+            plt.tight_layout()
+            plt.savefig("reports/figures/heuristic_comparison_8puzzle.png", dpi=300)
+            plt.close()
+            print("  [OK] Saved reports/figures/heuristic_comparison_8puzzle.png")
 
     # 6. Game Tournament Winrates Chart
     csv_game = read_csv_data("results/game_tournament.csv")
@@ -404,22 +482,24 @@ def generate_reports_and_charts():
 
         fig, ax = plt.subplots(figsize=(12, 6.5))
         x = np.arange(len(matchups))
-        bars = ax.bar(x, winrates_p1, color=['#55A868', '#4C72B0', '#DD8452', '#8172B3', '#CCB974'][:len(matchups)], width=0.45)
+        colors_g = ['#55A868', '#4C72B0', '#DD8452', '#8172B3', '#CCB974', '#C44E52',
+                     '#64B5CD', '#E377C2', '#7F7F7F', '#BCBD22']
+        bars = ax.bar(x, winrates_p1, color=[colors_g[i % len(colors_g)] for i in range(len(matchups))], width=0.45)
         ax.set_ylabel('Agent 1 Win Rate (%)')
         ax.set_title('Adversarial Game Tournament Performance & Win Rates')
         ax.set_ylim(0, 125)
         ax.set_xticks(x)
-        ax.set_xticklabels(matchups, rotation=0, fontsize=9)
+        ax.set_xticklabels(matchups, rotation=0, fontsize=8)
         ax.grid(axis='y', linestyle='--', alpha=0.7)
 
         for i, bar in enumerate(bars):
             height = bar.get_height()
-            g_name = game_names[i]
-            ax.annotate(f'[{g_name}]\n{height:.1f}% Win Rate',
+            g_name = game_names[i] if i < len(game_names) else ""
+            ax.annotate(f'[{g_name}]\n{height:.1f}%',
                         xy=(bar.get_x() + bar.get_width() / 2, height),
                         xytext=(0, 4),
                         textcoords="offset points",
-                        ha='center', va='bottom', fontsize=8, fontweight='bold')
+                        ha='center', va='bottom', fontsize=7, fontweight='bold')
 
         plt.tight_layout()
         plt.savefig("reports/figures/game_tournament_winrates.png", dpi=300)

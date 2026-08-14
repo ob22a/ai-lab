@@ -18,7 +18,8 @@ Controls (in-game):
 import random
 from domains.crazy.CrazyCard import create_deck, CrazyCard
 from domains.crazy.CrazyState import CrazyState
-from games.MCTS import MCTSSolver
+from games.MCTS import InformationSetMCTSSolver
+from domains.crazy.CrazyState import determinize_crazy_state
 from games.RandomSolver import RandomSolver
 from games.heuristics.ObssaHeuristic import ObssaHeuristicSolver
 from visualization.CrazyVisualizer import CrazyVisualizer
@@ -86,7 +87,8 @@ def main():
     p1 = ObssaHeuristicSolver()
 
     # Player 2 is the AI.  Change num_simulations / algorithm as desired.
-    p2 = MCTSSolver(num_simulations=200)
+    # IS-MCTS required: Crazy has hidden information (opponent's hand is unknown)
+    p2 = InformationSetMCTSSolver(determinize_crazy_state, num_simulations=200)
     # For a weaker / faster AI:
     # p2 = RandomSolver()
 

@@ -1,7 +1,7 @@
 """
 benchmarks/run_all_benchmarks.py
 
-Unified benchmark execution script. Runs multi-iteration benchmarks
+Unified benchmark execution script. Runs 30-iteration (or --runs N) benchmarks
 across all AI Lab domains and generates separate CSV files in results/:
 
   - results/search_8puzzle.csv
@@ -13,7 +13,7 @@ across all AI Lab domains and generates separate CSV files in results/:
   - results/game_tournament.csv
 
 Usage:
-  python benchmarks/run_all_benchmarks.py --runs 5
+  python benchmarks/run_all_benchmarks.py --runs 30
 """
 
 import argparse
@@ -30,7 +30,7 @@ import benchmarks.game_benchmark as gb
 
 def main():
     parser = argparse.ArgumentParser(description="Run all AI Lab benchmarks and populate CSV results.")
-    parser.add_argument("--runs", type=int, default=5, help="Number of benchmark iterations per algorithm/pairing (default: 5)")
+    parser.add_argument("--runs", type=int, default=30, help="Number of benchmark iterations per algorithm/pairing (default: 30)")
     args = parser.parse_args()
 
     num_runs = args.runs

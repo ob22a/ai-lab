@@ -413,13 +413,14 @@ def determinize_crazy_state(state: CrazyState) -> CrazyState:
     p1_h = my_hand if cp == 1 else sampled_opp_hand
     p2_h = sampled_opp_hand if cp == 1 else my_hand
 
-    return CrazyState(
+    st = CrazyState(
         p1_hand=p1_h,
         p2_hand=p2_h,
         deck_counts=new_deck_counts,
         discard_pile=list(state.discard_pile),
         current_player=cp,
-        pending_draws=state.pending_draws,
-        just_drew=getattr(state, 'just_drew', False)
+        pending_draws=state.pending_draws
     )
+    st.just_drew = getattr(state, 'just_drew', False)
+    return st
 

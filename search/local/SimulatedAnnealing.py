@@ -13,8 +13,12 @@ class SimulatedAnnealing(SearchAlgorithm):
     As temperature decreases, it behaves more like stochastic hill climbing.
     """
 
-    def __init__(self, problem, schedule_func=None):
+    def __init__(self, problem, schedule_func=None, epsilon: float = 1e-6, patience: int = 200):
         super().__init__(problem)
+        self.epsilon = epsilon
+        self.patience = patience
+        self._best_value = None
+        self._stall_count = 0
         if schedule_func is None:
             scale = (problem.n // 4)**1.2 if hasattr(problem, 'n') and problem.n is not None else 1
             self.schedule = lambda t: 100 * (0.95 ** (t / scale))
@@ -25,6 +29,8 @@ class SimulatedAnnealing(SearchAlgorithm):
         super().reset()
         self.current_state = self.problem.initial_state
         self.current_value = self.problem.value(self.current_state)
+        self._best_value = self.current_value
+        self._stall_count = 0
         
         self.current_node = Node(self.current_state, parent=None, action=None, path_cost=0)
         self.status = SearchStatus.RUNNING
@@ -36,7 +42,6 @@ class SimulatedAnnealing(SearchAlgorithm):
         T = self.schedule(self.num_iterations)
 
         if T <= 1e-10:
-            # Temperature cooled down, stop
             self.solution_node = self.current_node
             self.status = SearchStatus.SUCCESS
             return
@@ -50,13 +55,10 @@ class SimulatedAnnealing(SearchAlgorithm):
         delta_e = neighbor_value - self.current_value
 
         if delta_e > 0:
-            # Better state, always accept
             self.current_state = neighbor
             self.current_value = neighbor_value
             self.nodes_expanded += 1
         else:
-            # Worse state, accept with probability e^(delta_E / T)
-            # (Note: delta_E is negative, so this is e^(-|delta_E| / T) <= 1)
             probability = math.exp(delta_e / T)
             if random.random() < probability:
                 self.current_state = neighbor
@@ -64,6 +66,16 @@ class SimulatedAnnealing(SearchAlgorithm):
                 self.nodes_expanded += 1
 
         self.current_node = Node(self.current_state, parent=None, action=None, path_cost=0)
+
+        # Adaptive early stopping when improvement is negligible
+        if self._best_value is None or self.current_value > self._best_value + self.epsilon:
+            self._best_value = self.current_value
+            self._stall_count = 0
+        else:
+            self._stall_count += 1
+            if self._stall_count >= self.patience:
+                self.solution_node = self.current_node
+                self.status = SearchStatus.SUCCESS
 
     @property
     def frontier_states(self):

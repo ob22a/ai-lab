@@ -446,7 +446,7 @@ class CrazyVisualizer:
             
             # Wrap long move descriptions based on exact pixel width
             full_text = f"  P{actor}: {astr}"
-            max_width = self.W - self.HUD_X - 28
+            max_width = self.W - self.HUD_X - 48
             
             words = full_text.split(' ')
             cur_line = ""

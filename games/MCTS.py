@@ -176,6 +176,8 @@ class InformationSetMCTSSolver(MCTSSolver):
                     
                 # If we are at depth 1, update the root stats
                 if temp_node.parent == root:
+                    if temp_node.action_taken not in root_stats:
+                        root_stats[temp_node.action_taken] = [0.0, 0]
                     root_stats[temp_node.action_taken][1] += 1
                     root_stats[temp_node.action_taken][0] += win_score
                     

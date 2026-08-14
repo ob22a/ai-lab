@@ -36,7 +36,7 @@ def generate_random_cities(n, width=100, height=100):
 def main():
     parser = argparse.ArgumentParser(description="TSP Tour Optimization Demo")
     parser.add_argument("--vis", action="store_true", help="Launch interactive Pygame visualizer")
-    parser.add_argument("--algo", type=str, default="SimulatedAnnealing",
+    parser.add_argument("--algo", type=str, default="LocalBeamSearch",
                         choices=["SimulatedAnnealing", "HillClimbing", "LocalBeamSearch", "GeneticAlgorithm"],
                         help="Optimization algorithm class")
     parser.add_argument("--cities", type=int, default=20, help="Number of random cities (default: 20)")

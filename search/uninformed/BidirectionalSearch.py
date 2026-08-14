@@ -52,20 +52,23 @@ class BidirectionalSearch(SearchAlgorithm):
         fwd_node: Traces back to START.
         bwd_node: Traces back to GOAL. Both represent the same Intersection State.
         """
-        # Reverses backward path without using extra memory or additional Node object
-        # Since the backward node is repeated we will first move to its parent and after reversing this segmnet 
         current = bwd_node.parent
-        tail = current  
-        prev = None
+        prev = fwd_node
+        
+        current_path_cost = fwd_node.path_cost
+        prev_bwd_cost = bwd_node.path_cost
 
         while current:
             nxt = current.parent
+            step_cost = prev_bwd_cost - current.path_cost
+            current_path_cost += step_cost
+            prev_bwd_cost = current.path_cost
+            
             current.parent = prev
+            current.path_cost = current_path_cost
+            
             prev = current
             current = nxt
-
-        # Attach the reversed backward path to the forward path
-        tail.parent = fwd_node
 
         return prev # This is now the goal
 

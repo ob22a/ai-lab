@@ -216,10 +216,10 @@ def test_crazy_visualizer_headless():
     from visualization.CrazyVisualizer import CrazyVisualizer
     from games.heuristics.ObssaHeuristic import ObssaHeuristicSolver
 
-    p1_hand = [CrazyCard('Spade', 5), CrazyCard('Heart', 8), CrazyCard('Diamond', 7)]
-    p2_hand = [CrazyCard('Club', 4), CrazyCard('Spade', 10)]
-    deck = {CrazyCard('Heart', 2): 5, CrazyCard('Club', 3): 5}
-    discard = [CrazyCard('Spade', 5)]
+    p1_hand = [CrazyCard(5, 'Spade'), CrazyCard(8, 'Heart'), CrazyCard(7, 'Diamond')]
+    p2_hand = [CrazyCard(4, 'Club'), CrazyCard(10, 'Spade')]
+    deck = {CrazyCard(2, 'Heart'): 5, CrazyCard(3, 'Club'): 5}
+    discard = [CrazyCard(5, 'Spade')]
 
     state = CrazyState(p1_hand, p2_hand, deck, discard, current_player=1)
     p1_solver = ObssaHeuristicSolver()

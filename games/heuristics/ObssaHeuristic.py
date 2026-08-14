@@ -106,9 +106,11 @@ def evaluate_action_quality(state: Any, action: Any, player: int) -> float:
         if num_wildcards > 1 and len(my_hand) > 6 and not wins_game:
             score -= 25.0  # Heavy penalty for wasting multiple wildcards in early/mid game
 
-        # If player has non-wild options, discourage playing 8/J unless hand is small
+        # Prefer drawing over wasting 8/J when no beneficial suit to declare.
+        # If only wildcards are playable and no suit alignment benefit exists, penalize heavily
+        # so a draw/pass action (if legal) wins the comparison.
         if len(my_hand) > 2 and not declared_suit:
-            score -= 5.0
+            score -= 12.0
 
     # --- Rule C: Suit Alignment for Remaining Hand ---
     # Prefer actions that set active/declared suit to match majority suit of remaining hand.
