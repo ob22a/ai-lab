@@ -90,14 +90,23 @@ def evaluate_action_quality(state: Any, action: Any, player: int) -> float:
     # --- Rule B: Wildcard Conservation (8 and J) ---
     # Wildcards derive their power from changing the active suit.
     # If wild suit change is restricted on top of another wild card, playing 8/J wastes its power.
-    has_wildcard = any(c.is_wild() for c in cards_played)
-    if has_wildcard:
+    my_hand = state.p1_hand if player == 1 else state.p2_hand
+    num_wildcards = sum(1 for c in cards_played if c.is_wild())
+    
+    if num_wildcards > 0:
         top_was_wild = len(state.discard_pile) >= 1 and state.discard_pile[-1].is_wild()
         if top_was_wild and not getattr(state, 'wild_suit_change_allowed', True):
             score -= 18.0  # Wasting wildcard when suit change is restricted
 
+        # Multi-Wildcard Hoarding Rule:
+        # Playing multiple 8s/Js together when holding > 6 cards wastes suit-changing power,
+        # as opponents will likely change the suit again before your next turn.
+        # Preserve wildcards until hand size is <= 6 or when the play wins the game immediately!
+        wins_game = (len(my_hand) - len(cards_played)) == 0
+        if num_wildcards > 1 and len(my_hand) > 6 and not wins_game:
+            score -= 25.0  # Heavy penalty for wasting multiple wildcards in early/mid game
+
         # If player has non-wild options, discourage playing 8/J unless hand is small
-        my_hand = state.p1_hand if player == 1 else state.p2_hand
         if len(my_hand) > 2 and not declared_suit:
             score -= 5.0
 

@@ -1,5 +1,5 @@
 Problem,BT (Naive),BT+MRV,BT+FC,BT+MAC,Min-Conflicts
-Map Coloring,11 nodes (0.0001s),11 nodes (0.0001s),7 nodes (0.0001s),7 nodes (0.0001s),10 nodes (0.0001s)
-8-Queens,876 nodes (0.0032s),876 nodes (0.0030s),88 nodes (0.0016s),20 nodes (0.0019s),22 nodes (0.0015s)
-Sudoku Easy,HANGS FOREVER,1637 nodes (0.0688s),489 nodes (0.1235s),402 nodes (0.1982s),N/A (Too dense)
-Sudoku Hard,HANGS FOREVER,HANGS FOREVER,5587 nodes (1.3948s),1768 nodes (1.2319s),N/A (Too dense)
+Map Coloring,11 nodes (0.0002s),11 nodes (0.0002s),7 nodes (0.0002s),7 nodes (0.0004s),5 nodes (0.0001s)
+8-Queens,876 nodes (0.0062s),876 nodes (0.0059s),88 nodes (0.0034s),20 nodes (0.0053s),20 nodes (0.0041s)
+Sudoku Easy,HANGS FOREVER,1637 nodes (0.1504s),489 nodes (0.2502s),402 nodes (0.4114s),N/A (Too dense)
+Sudoku Hard,HANGS FOREVER,HANGS FOREVER,5587 nodes (2.9405s),1768 nodes (2.3488s),N/A (Too dense)

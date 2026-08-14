@@ -352,26 +352,114 @@ For an in-depth qualitative and quantitative breakdown, see the full [Benchmark 
 
 ---
 
-## 🚀 Quick Start & Commands
+## 🚀 Quick Start & CLI Command Reference
 
 ### Setup Environment
 ```bash
 pip install -r requirements.txt
 ```
 
-### Run Unified Interactive Hub
+### 1. Interactive Launcher Hub
+Launch the central Pygame GUI menu to select and run any of the 18 AI framework domain demos:
 ```bash
 python main.py
 ```
 
-### Run Automated Benchmarks & Reports
+### 2. Standalone Demo Commands (All Flags & Options)
+
+#### Classical & Informed Search Demos
 ```bash
-python benchmarks/run_all_benchmarks.py --runs 30
-python benchmarks/generate_report.py
+# Maze Pathfinding with Pygame GUI
+python -m demo.maze --vis --algo AStar
+python -m demo.maze --vis --algo GBFS
+python -m demo.maze --vis --algo IGBFS
+python -m demo.maze --vis --algo SMAStar
+
+# Romanian Map City Routing
+python -m demo.romanian_map_demo --vis --algo AStar
+python -m demo.romanian_map_demo --vis --algo BFS
+
+# N-Puzzle Sliding Tile Search
+python -m demo.n-puzzle --vis --algo IDAStar
+python -m demo.n-puzzle --vis --algo RBFS
+
+# Sokoban Box Pushing Search
+python -m demo.sokoban_demo --vis
+
+# Online Maze Exploration
+python -m demo.online_maze_demo --vis
+
+# AND-OR Search Vacuum World (Text Mode)
+python -m demo.and_or_vacuum
+
+# Word Ladder Transformation Search (Text Mode)
+python -m demo.word_ladder_demo lead gold --algo BFS
 ```
 
-### Run Unit Tests
-We maintain 80+ unit tests covering all search algorithms, CSP heuristics, optimization routines, and card game rules:
+#### Constraint Satisfaction Problem (CSP) Demos
+```bash
+# Sudoku Solver (Backtracking + AC-3)
+python -m demo.csp_sudoku --vis
+
+# Tree Decomposition (Junction Tree CSP) with Pygame Visualizer
+python -m demo.csp_tree_decomposition --vis
+
+# Cycle Cutset Conditioning with Pygame Visualizer
+python -m demo.csp_cycle_cutset --vis
+
+# Australia Map Coloring CSP
+python -m demo.csp_map_coloring --vis
+
+# Cryptarithmetic Letter Math (SEND+MORE=MONEY)
+python -m demo.csp_cryptarithmetic --vis
+
+# University Timetabling CSP (Text Grid Mode)
+python -m demo.csp_timetabling --algo Backtracking
+```
+
+#### Optimization & Local Search Demos
+```bash
+# TSP Tour Optimization (Simulated Annealing, Hill Climbing, Genetic Algorithm, Beam)
+python -m demo.local_search_tsp --vis --algo SimulatedAnnealing
+python -m demo.local_search_tsp --vis --algo GeneticAlgorithm
+
+# N-Queens Local Search Optimization
+python -m demo.local_search_nqueens --vis --algo HillClimbing
+```
+
+#### Adversarial Game AI Demos
+```bash
+# Unified Board Game AI (Tic-Tac-Toe, Connect Four, Othello / Reversi)
+python -m demo.games_demo --vis --game tictactoe --p1 human --p2 mcts
+python -m demo.games_demo --vis --game connect_four --p1 human --p2 alphabeta
+python -m demo.games_demo --vis --game othello --p1 human --p2 mcts
+
+# Crazy Card Game (Obssa Heuristic vs MCTS)
+python -m demo.crazy_demo --vis
+```
+
+---
+
+### 3. Benchmark Suite & Report Generation
+```bash
+# Run Full Multi-Iteration Benchmark Suite (Process Isolated with 10s Timeout)
+python -m benchmarks.run_all_benchmarks --runs 30
+
+# Run Individual Domain Benchmarks
+python -m benchmarks.search_benchmark --runs 30 --domains 8pzl,15pzl,maze
+python -m benchmarks.local_search_benchmark --runs 30
+python -m benchmarks.csp_benchmark --runs 30
+python -m benchmarks.game_benchmark --runs 30 --domains tic_tac_toe,connect_four,othello,crazy
+
+# Regenerate All 13 Report PNG Diagrams from CSV Data
+python -m benchmarks.generate_report
+```
+
+---
+
+### 4. Running Unit Tests
+We maintain 100+ unit tests covering all search algorithms, CSP heuristics, optimization routines, and card game rules:
 ```bash
 python -m pytest -v
 ```
+

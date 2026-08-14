@@ -1,5 +1,5 @@
 Label,Success,Best Objective / Tour Distance,Nodes Expanded,Nodes Generated,Runtime (s),Runtime Std,Max Frontier,Runs
-Hill Climbing / 8-Queens,True,26.0,4,224,0.000977,0.000138,1,30
-Simulated Annealing / 8-Queens,True,27.73,215,1238,0.008304,0.000325,1,30
-Local Beam (k=5) / 8-Queens,True,27.43,20,1067,0.005063,0.001055,1,30
-Genetic Algorithm / 8-Queens,True,27.43,14400,14701,0.145934,0.010285,1,30
+Hill Climbing / 8-Queens,True,26.0,3,168,0.001442,0.000209,1,3
+Simulated Annealing / 8-Queens,True,27.33,200,1238,0.015974,0.00083,1,3
+Local Beam (k=5) / 8-Queens,True,26.67,15,824,0.008023,0.001166,1,3
+Genetic Algorithm / 8-Queens,True,27.33,14400,14701,0.305298,0.025363,1,3

@@ -33,6 +33,11 @@ from domains.connect_four.ConnectFour import ConnectFourState
 from demo.crazy_demo import make_full_deck_state
 
 
+from domains.othello.Othello import OthelloState
+from domains.othello.OthelloEval import othello_evaluation
+from games.AlphaBetaOrdered import AlphaBetaOrderedSolver
+
+
 def play_game(state, agent1, agent2, max_moves: int = 100) -> int:
     """Plays a single game between agent1 (P1) and agent2 (P2). Returns winner ID (1, 2, or 0 for draw).
     Uses full 54-card deck for Crazy card game and caps maximum turns at max_moves to prevent infinite loops.
@@ -71,7 +76,7 @@ def play_game(state, agent1, agent2, max_moves: int = 100) -> int:
 
 def run_game_tournament(num_runs=30, target_games=None):
     if target_games is None:
-        target_games = ["tic_tac_toe", "connect_four", "crazy"]
+        target_games = ["tic_tac_toe", "connect_four", "othello", "crazy"]
 
     print("=" * 70)
     print(f"  RUNNING GAME AGENT TOURNAMENT BENCHMARK ({num_runs} RUNS PER PAIRING)")
@@ -85,6 +90,11 @@ def run_game_tournament(num_runs=30, target_games=None):
         ]),
         ("connect_four", "Connect Four", lambda: ConnectFourState(), [
             ("AlphaBeta(d=4)", AlphaBetaSolver(max_depth=4)),
+            ("MCTS(n=30)", MCTSSolver(num_simulations=30)),
+            ("Random", RandomSolver())
+        ]),
+        ("othello", "Othello (Reversi)", lambda: OthelloState(), [
+            ("AlphaBeta(d=3)", AlphaBetaOrderedSolver(max_depth=3, evaluation_function=othello_evaluation)),
             ("MCTS(n=30)", MCTSSolver(num_simulations=30)),
             ("Random", RandomSolver())
         ]),

@@ -444,20 +444,33 @@ class CrazyVisualizer:
             if actor != self.human_player and "Drew" in astr:
                 astr = "Drew a card"
             
-            # Wrap long move descriptions
+            # Wrap long move descriptions based on exact pixel width
             full_text = f"  P{actor}: {astr}"
-            max_chars = max(15, (self.W - self.HUD_X - 25) // 8)
-            if len(full_text) > max_chars:
-                words = full_text.split()
-                line = ""
-                for word in words:
-                    if len(line) + len(word) + 1 <= max_chars:
-                        line += (" " if line else "") + word
+            max_width = self.W - self.HUD_X - 28
+            
+            words = full_text.split(' ')
+            cur_line = ""
+            for w in words:
+                test_line = f"{cur_line} {w}".strip() if cur_line else w
+                if self.font_sm.size(test_line)[0] <= max_width:
+                    cur_line = test_line
+                else:
+                    if cur_line:
+                        txt(cur_line, self.font_sm, col, 1)
+                    # If single word exceeds line width, break character by character
+                    if self.font_sm.size(w)[0] > max_width:
+                        sub = ""
+                        for char in w:
+                            if self.font_sm.size(sub + char)[0] <= max_width:
+                                sub += char
+                            else:
+                                txt(sub, self.font_sm, col, 1)
+                                sub = char
+                        cur_line = sub
                     else:
-                        txt(line, self.font_sm, col, 1)
-                        line = "    " + word
-                if line:
-                    txt(line, self.font_sm, col, 2)
+                        cur_line = "    " + w
+            if cur_line:
+                txt(cur_line, self.font_sm, col, 2)
             else:
                 txt(full_text, self.font_sm, col, 2)
 

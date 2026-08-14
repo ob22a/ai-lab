@@ -1,37 +1,54 @@
-# =====================================================================
-# TWEAKABLE CONFIGURATION - Modify these variables to test variations!
-# =====================================================================
-# Solvers available:   BFS, AStar, DFS, UCS, GreedyBestFirstSearch
-# Words available:     lead, gold, obssa, great, stone, money, etc.
-# =====================================================================
+"""
+demo/word_ladder_demo.py
+Word Ladder Transformation Search Demo (BFS, A*, DFS, UCS, GBFS).
+
+Usage:
+  python -m demo.word_ladder_demo [START_WORD] [GOAL_WORD] [--algo BFS|AStar|DFS|UCS|GBFS]
+"""
 
 import sys
+import os
+import argparse
 import time
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 from domains.word_ladder.WordLadder import WordLadderProblem
 from search.uninformed.BFS import BFS
 from search.uninformed.DFS import DFS
 from search.uninformed.UCS import UCS
 from search.informed.AStar import AStar
 from search.informed.GBFS import GreedyBestFirstSearch
-from visualization.WordLadderVisualizer import WordLadderVisualizer
-
-# ── User Configuration ────────────────────────────────────────────────
-START_WORD    = "lead"
-GOAL_WORD     = "gold"
-CHOSEN_SOLVER = BFS   # Options: BFS, AStar, DFS, UCS, GreedyBestFirstSearch
-VISUALIZE     = True  # Set to False for text-only output
 
 
-def solve_word_ladder(start_word=START_WORD, goal_word=GOAL_WORD, visualize=True):
-    print(f"\n--- Word Ladder Search: '{start_word.upper()}' -> '{goal_word.upper()}' ---")
-    problem = WordLadderProblem(start_word, goal_word)
+def main():
+    parser = argparse.ArgumentParser(description="Word Ladder Search Demo")
+    parser.add_argument("start", nargs="?", default="lead", help="Start word")
+    parser.add_argument("goal", nargs="?", default="gold", help="Goal word")
+    parser.add_argument("--algo", type=str, default="BFS", choices=["BFS", "AStar", "DFS", "UCS", "GBFS"], help="Algorithm to run")
+    args = parser.parse_args()
+
+    print("=" * 65)
+    print(f"      WORD LADDER TRANSFORM DEMO ('{args.start.upper()}' -> '{args.goal.upper()}')")
+    print("=" * 65)
+
+    problem = WordLadderProblem(args.start.lower(), args.goal.lower())
     
-    print(f"Solving using {CHOSEN_SOLVER.__name__}...")
-    solver = CHOSEN_SOLVER(problem)
+    solvers = {
+        "BFS": BFS(problem),
+        "AStar": AStar(problem),
+        "DFS": DFS(problem),
+        "UCS": UCS(problem),
+        "GBFS": GreedyBestFirstSearch(problem)
+    }
+
+    solver = solvers.get(args.algo, BFS(problem))
+    print(f"Executing {solver.__class__.__name__}...")
+
     t0 = time.time()
     res = solver.run()
     dur = time.time() - t0
-    
+
     if res.solution:
         path = []
         node = res.solution
@@ -39,26 +56,13 @@ def solve_word_ladder(start_word=START_WORD, goal_word=GOAL_WORD, visualize=True
             path.append(node.state)
             node = node.parent
         path = list(reversed(path))
-        print(f"Solution found in {dur:.4f}s ({res.nodes_expanded} nodes expanded, cost={res.path_cost}):")
-        print(" -> ".join(w.upper() for w in path))
+        print(f"\nSolution Found in {dur:.4f}s ({res.nodes_expanded} nodes expanded, path length = {len(path)-1}):")
+        print("  " + " -> ".join(w.upper() for w in path))
     else:
-        print("No word ladder solution found!")
-
-    if visualize:
-        print(f"\nLaunching Pygame Word Ladder Visualizer with {CHOSEN_SOLVER.__name__}...")
-        vis = WordLadderVisualizer(start_word=start_word, goal_word=goal_word, solver_class=CHOSEN_SOLVER)
-        vis.run()
-
-
-def main():
-    visualize = VISUALIZE and ("--no-vis" not in sys.argv)
-    clean_argv = [a for a in sys.argv if a != "--no-vis"]
-    if len(clean_argv) == 3:
-        w1, w2 = clean_argv[1], clean_argv[2]
-        solve_word_ladder(w1, w2, visualize=visualize)
-    else:
-        solve_word_ladder(START_WORD, GOAL_WORD, visualize=visualize)
+        print("\nNo word ladder transformation path found!")
+    print("=" * 65)
 
 
 if __name__ == "__main__":
     main()
+
