@@ -238,7 +238,7 @@ python -m benchmarks.generate_report
 python -m utils.generate_markdown_tables
 ```
 
-* **Reports**: See `reports/benchmark_report.md` and `reports/comparison.md`.
+* **Reports**: See [`reports/benchmark_report.md`](./reports/benchmark_report.md) and [`reports/comparison.md`](./reports/comparison.md).
 * **CSV Results**: Raw per-run data in `results/*.csv`.
 * **Charts**: High-resolution figures in `reports/figures/`.
 
