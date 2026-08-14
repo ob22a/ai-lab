@@ -97,9 +97,9 @@ class MazeSearchVisualizer(Visualizer):
         self.last_h_diff: float = 0.0
 
         pygame.init()
-        self.screen = pygame.display.set_mode((self.width, self.height))
+        self.screen = pygame.display.set_mode((self.width, self.height), pygame.RESIZABLE)
         solver_name = self.solver.__class__.__name__
-        pygame.display.set_caption(f"AI Framework - Maze Visualizer ({solver_name})")
+        pygame.display.set_caption(f"AI Lab - Maze Visualizer ({solver_name})")
 
         self.clock = pygame.time.Clock()
         
@@ -527,8 +527,12 @@ class MazeSearchVisualizer(Visualizer):
             if event.type == pygame.QUIT:
                 self.running = False
 
+            elif event.type == pygame.VIDEORESIZE:
+                self.width, self.height = event.w, event.h
+                self.screen = pygame.display.set_mode((self.width, self.height), pygame.RESIZABLE)
+
             elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE:
+                if event.key == pygame.K_ESCAPE or event.key == pygame.K_b:
                     self.running = False
 
                 elif event.key == pygame.K_r:

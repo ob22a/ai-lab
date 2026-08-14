@@ -87,7 +87,7 @@ class GeneticAlgorithmVisualizer(Visualizer):
 
         pygame.init()
         self.screen = pygame.display.set_mode((self.width, self.height))
-        pygame.display.set_caption("AI Framework - Genetic Algorithm Evolution Visualizer")
+        pygame.display.set_caption("AI Lab - Genetic Algorithm Evolution Visualizer")
 
         self.clock = pygame.time.Clock()
         self.font_tiny = pygame.font.SysFont("consolas", 10)

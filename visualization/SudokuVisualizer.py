@@ -30,7 +30,7 @@ class SudokuVisualizer:
         }
 
         pygame.init()
-        self.screen = pygame.display.set_mode((self.width, self.height))
+        self.screen = pygame.display.set_mode((self.width, self.height), pygame.RESIZABLE)
         pygame.display.set_caption("AI Lab - Sudoku CSP Solver")
 
         self.font = pygame.font.SysFont("consolas", 16)
@@ -162,7 +162,7 @@ class SudokuVisualizer:
             self.draw_grid()
             self.draw_hud()
             pygame.display.flip()
-            time.sleep(0.05)
+            self.clock.tick(self.fps)
             
         if not self.running or self.restart_requested:
             raise InterruptedError("Visualizer closed or restarted by user.")
@@ -172,7 +172,7 @@ class SudokuVisualizer:
         pygame.display.flip()
         
         if self.delay_ms > 0:
-            time.sleep(self.delay_ms / 1000.0)
+            pygame.time.delay(int(self.delay_ms))
 
     def run(self):
         print("Sudoku Visualizer ready. Press SPACE to start solving.")

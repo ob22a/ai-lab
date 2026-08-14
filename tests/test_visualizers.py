@@ -193,3 +193,39 @@ def test_nqueens_all_solvers_headless():
         vis_csp.render()
         vis_csp.restart()
         assert vis_csp.history_index == 0
+
+
+def test_romanian_map_visualizer_headless():
+    from domains.romanian_map.RomanianMap import RomanianMapProblem
+    from visualization.RomanianMapVisualizer import RomanianMapVisualizer
+    from search.informed.AStar import AStar
+
+    prob = RomanianMapProblem("Arad", "Bucharest")
+    vis = RomanianMapVisualizer(problem=prob, solver_class=AStar, fps=10)
+    assert len(vis.steps) > 0
+    assert vis.history_index == 0
+
+    vis.render()
+    vis.history_index = min(1, len(vis.steps) - 1)
+    vis.render()
+
+
+def test_crazy_visualizer_headless():
+    from domains.crazy.CrazyState import CrazyState
+    from domains.crazy.CrazyCard import CrazyCard
+    from visualization.CrazyVisualizer import CrazyVisualizer
+    from games.heuristics.ObssaHeuristic import ObssaHeuristicSolver
+
+    p1_hand = [CrazyCard('Spade', 5), CrazyCard('Heart', 8), CrazyCard('Diamond', 7)]
+    p2_hand = [CrazyCard('Club', 4), CrazyCard('Spade', 10)]
+    deck = {CrazyCard('Heart', 2): 5, CrazyCard('Club', 3): 5}
+    discard = [CrazyCard('Spade', 5)]
+
+    state = CrazyState(p1_hand, p2_hand, deck, discard, current_player=1)
+    p1_solver = ObssaHeuristicSolver()
+    p2_solver = ObssaHeuristicSolver()
+
+    vis = CrazyVisualizer(state, p1_solver, p2_solver, human_player=1, fps=10)
+    assert vis.history_index == 0
+    vis.render()
+

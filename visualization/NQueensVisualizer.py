@@ -56,8 +56,8 @@ class NQueensVisualizer(Visualizer):
         }
 
         pygame.init()
-        self.screen = pygame.display.set_mode((self.width, self.height))
-        title = "AI Framework - N-Queens CSP Visualizer" if self.is_csp else "AI Framework - N-Queens Local Search"
+        self.screen = pygame.display.set_mode((self.width, self.height), pygame.RESIZABLE)
+        title = "AI Lab - N-Queens CSP Visualizer" if self.is_csp else "AI Lab - N-Queens Local Search"
         pygame.display.set_caption(title)
 
         self.clock = pygame.time.Clock()

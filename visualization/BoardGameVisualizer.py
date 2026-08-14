@@ -50,8 +50,8 @@ class BoardGameVisualizer:
         }
 
         pygame.init()
-        self.screen = pygame.display.set_mode((self.width, self.height))
-        game_name = "Connect Four" if self.rows == 6 else "Othello" if self.rows == 8 else "Tic-Tac-Toe"
+        self.screen = pygame.display.set_mode((self.width, self.height), pygame.RESIZABLE)
+        game_name = "Checkers" if hasattr(self.state, "get_legal_actions") and "Checkers" in self.state.__class__.__name__ else ("Connect Four" if self.rows == 6 else ("Othello" if self.rows == 8 else "Tic-Tac-Toe"))
         pygame.display.set_caption(f"AI Lab - {game_name}")
 
         self.font = pygame.font.SysFont("consolas", 14)
@@ -92,7 +92,27 @@ class BoardGameVisualizer:
                 val = self.history[self.history_index].board[r][c]
                 center = (c * self.cell_size + self.cell_size // 2, r * self.cell_size + self.cell_size // 2)
                 
-                if self.rows == 6: # Connect Four
+                # Checkers rendering
+                if hasattr(self.state, "__class__") and "Checkers" in self.state.__class__.__name__:
+                    # Dark squares pattern
+                    if (r + c) % 2 == 1:
+                        sq_rect = pygame.Rect(c * self.cell_size, r * self.cell_size, self.cell_size, self.cell_size)
+                        pygame.draw.rect(self.screen, (100, 50, 20), sq_rect)
+
+                    if val in (1, 10, '1', '10', 'P1', 'K1'):  # Player 1 (Red / Dark)
+                        pygame.draw.circle(self.screen, (200, 40, 40), center, self.cell_size // 2 - 6)
+                        pygame.draw.circle(self.screen, (255, 255, 255), center, self.cell_size // 2 - 6, 2)
+                        if val in (10, '10', 'K1'): # King crown
+                            kt = self.font.render("★", True, (255, 215, 0))
+                            self.screen.blit(kt, (center[0] - kt.get_width()//2, center[1] - kt.get_height()//2))
+                    elif val in (2, 20, '2', '20', 'P2', 'K2'): # Player 2 (White / Light)
+                        pygame.draw.circle(self.screen, (240, 240, 240), center, self.cell_size // 2 - 6)
+                        pygame.draw.circle(self.screen, (20, 20, 20), center, self.cell_size // 2 - 6, 2)
+                        if val in (20, '20', 'K2'): # King crown
+                            kt = self.font.render("★", True, (255, 215, 0))
+                            self.screen.blit(kt, (center[0] - kt.get_width()//2, center[1] - kt.get_height()//2))
+
+                elif self.rows == 6: # Connect Four
                     if val == self.p1_id:
                         pygame.draw.circle(self.screen, self.COLORS["p1"], center, self.cell_size // 2 - 5)
                     elif val == self.p2_id:
@@ -262,8 +282,11 @@ class BoardGameVisualizer:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     self.running = False
+                elif event.type == pygame.VIDEORESIZE:
+                    self.width, self.height = event.w, event.h
+                    self.screen = pygame.display.set_mode((self.width, self.height), pygame.RESIZABLE)
                 elif event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_ESCAPE:
+                    if event.key == pygame.K_ESCAPE or event.key == pygame.K_b:
                         self.running = False
                     elif event.key == pygame.K_r:
                         self.restart()

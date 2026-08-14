@@ -65,7 +65,11 @@ class RomanianMapProblem(SearchProblem):
         return action
 
     def get_cost(self, state: str, action: str, next_state: str) -> float:
-        return float(ROMANIA_MAP[state][action])
+        if action is not None and state in ROMANIA_MAP and action in ROMANIA_MAP[state]:
+            return float(ROMANIA_MAP[state][action])
+        if state in ROMANIA_MAP and next_state in ROMANIA_MAP[state]:
+            return float(ROMANIA_MAP[state][next_state])
+        return 1.0
 
     def heuristic(self, state: str) -> float:
         """

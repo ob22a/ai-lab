@@ -59,7 +59,7 @@ class SokobanVisualizer(Visualizer):
         }
 
         pygame.init()
-        self.screen = pygame.display.set_mode((self.width, self.height))
+        self.screen = pygame.display.set_mode((self.width, self.height), pygame.RESIZABLE)
         pygame.display.set_caption("AI Lab - Sokoban Solver")
 
         self.clock = pygame.time.Clock()

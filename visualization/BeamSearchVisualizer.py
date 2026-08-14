@@ -79,8 +79,8 @@ class BeamSearchVisualizer(Visualizer):
         }
 
         pygame.init()
-        self.screen = pygame.display.set_mode((self.width, self.height))
-        pygame.display.set_caption("AI Framework - Local Beam Search Visualizer")
+        self.screen = pygame.display.set_mode((self.width, self.height), pygame.RESIZABLE)
+        pygame.display.set_caption("AI Lab - Local Beam Search Visualizer")
 
         self.clock = pygame.time.Clock()
         self.font_small = pygame.font.SysFont("consolas", 12)

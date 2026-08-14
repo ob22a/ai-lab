@@ -70,7 +70,7 @@ class NPuzzleVisualizer(Visualizer):
         pygame.init()
 
         self.screen = pygame.display.set_mode(
-            (self.width, self.height)
+            (self.width, self.height), pygame.RESIZABLE
         )
 
         pygame.display.set_caption(
