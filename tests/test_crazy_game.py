@@ -11,10 +11,6 @@ from domains.crazy.CrazyCard import CrazyCard, create_deck
 from domains.crazy.CrazyState import CrazyState
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Fixtures
-# ─────────────────────────────────────────────────────────────────────────────
-
 def make_card(rank, suit='Spade'):
     return CrazyCard(rank, suit)
 
@@ -34,10 +30,6 @@ def make_state(p1_hand, p2_hand, discard_top, deck_cards=None,
         turn_skipped=turn_skipped,
     )
 
-
-# ─────────────────────────────────────────────────────────────────────────────
-# 1. Card properties
-# ─────────────────────────────────────────────────────────────────────────────
 
 class TestCrazyCard:
     def test_joker_is_wild(self):
@@ -77,10 +69,6 @@ class TestCrazyCard:
         deck = create_deck()
         assert len(deck) == 54
 
-
-# ─────────────────────────────────────────────────────────────────────────────
-# 2. Valid play rules
-# ─────────────────────────────────────────────────────────────────────────────
 
 class TestValidPlay:
     def test_same_suit_valid(self):
@@ -124,11 +112,6 @@ class TestValidPlay:
         assert (make_card(7, 'Club'),) in legal
         assert (make_card(4, 'Heart'),) not in legal
 
-
-# ─────────────────────────────────────────────────────────────────────────────
-# 3. Multi-card combos
-# ─────────────────────────────────────────────────────────────────────────────
-
 class TestCombos:
     def test_rank_combo_two_fours(self):
         top = make_card(4, 'Spade')
@@ -158,10 +141,6 @@ class TestCombos:
         expected = tuple(sorted([seven_s, nine_s], key=lambda c: (str(c.rank), c.suit)))
         assert expected in cards_in_combos, "7♠ + 9♠ suit combo should be legal"
 
-
-# ─────────────────────────────────────────────────────────────────────────────
-# 4. Penalty mechanics
-# ─────────────────────────────────────────────────────────────────────────────
 
 class TestPenalties:
     def test_2_forces_opponent_to_draw_2(self):
@@ -310,7 +289,7 @@ class TestPenalties:
         assert new_state.pending_draws == 6, f"Expected 6, got {new_state.pending_draws}"
 
     def test_mixed_combo_defense_invalid(self):
-        """Mixed rank/suit combos (like 7H + 2H) or non-penalty wildcards (like 8) are invalid for defense."""
+        """Combos resulting in draw penalty > 0 are valid counters, but non-penalty cards/wildcards (like 8) are invalid for defense."""
         top = make_card(2, 'Heart')
         seven_h = make_card(7, 'Heart')
         two_h = make_card(2, 'Heart')
@@ -324,14 +303,106 @@ class TestPenalties:
             pending_draws=2
         )
         legal = state.get_legal_actions()
-        # (seven_h, two_h) is a valid play normally, but under penalty it should be blocked
-        assert (seven_h, two_h) not in legal
-        assert (two_h, seven_h) not in legal
         # (eight_h,) is wildcard but has 0 penalty, so invalid to counter
         assert (eight_h,) not in legal
-        # Only (two_h,) and DRAW_PENALTY should be legal
+        # (seven_h, two_h) ends in 2H (+2 penalty), so it is a valid counter combo
+        assert (seven_h, two_h) in legal or (two_h, seven_h) in legal
         assert (two_h,) in legal
         assert ('DRAW_PENALTY',) in legal
+
+    def test_user_bug_6d_8d_illegal(self):
+        """6D and 8D played together without a 7 is illegal."""
+        top = make_card(6, 'Diamond')
+        c6d = make_card(6, 'Diamond')
+        c8d = make_card(8, 'Diamond')
+        state = make_state([c6d, c8d], [make_card(3, 'Club')], top)
+        legal = state.get_legal_actions()
+        assert (c6d, c8d) not in legal
+        assert (c8d, c6d) not in legal
+
+    def test_user_bug_j_joker_8_illegal_together(self):
+        """J, Joker, 8 played together without a 7 is illegal sequence."""
+        top = make_card(4, 'Spade')
+        cj = make_card('J', 'Spade')
+        cjoker = make_card(0, 'Joker')
+        c8 = make_card(8, 'Heart')
+        state = make_state([cj, cjoker, c8], [make_card(3, 'Club')], top)
+        legal = state.get_legal_actions()
+        # Wilds cannot chain to each other directly in a single combo without 7 or matching rank
+        has_wild_chain = any(
+            len(a) > 1 and all(isinstance(x, CrazyCard) and x.is_wild() for x in a)
+            for a in legal
+        )
+        assert not has_wild_chain
+
+    def test_user_bug_7s_8c_jh_suit_is_spade(self):
+        """If 7S 8C JH played together, the suit is Spade (topmost non-special card)."""
+        top = make_card(4, 'Spade')
+        c7s = make_card(7, 'Spade')
+        c8c = make_card(8, 'Club')
+        cjh = make_card('J', 'Heart')
+        state = make_state([c7s, c8c, cjh], [make_card(3, 'Club')], top)
+        res = state.apply_action((c7s, c8c, cjh))
+        assert res.active_suit == 'Spade'
+
+    def test_user_bug_7d_3d_3c_8s_joker_suit_is_club(self):
+        """If 7D 3D 3C 8S Joker played together, the suit is Club (topmost non-special card)."""
+        top = make_card(4, 'Diamond')
+        c7d = make_card(7, 'Diamond')
+        c3d = make_card(3, 'Diamond')
+        c3c = make_card(3, 'Club')
+        c8s = make_card(8, 'Spade')
+        cjoker = make_card(0, 'Joker')
+        state = make_state([c7d, c3d, c3c, c8s, cjoker], [make_card(3, 'Club')], top)
+        res = state.apply_action((c7d, c3d, c3c, c8s, cjoker))
+        assert res.active_suit == 'Club'
+
+    def test_user_bug_7d_7c_3c_3s_8d_8s_jc_valid_suit_spade(self):
+        """7D 7C 3C 3S 8D 8S JC is valid and suit is Spade."""
+        top = make_card(4, 'Diamond')
+        cards = [
+            make_card(7, 'Diamond'), make_card(7, 'Club'),
+            make_card(3, 'Club'), make_card(3, 'Spade'),
+            make_card(8, 'Diamond'), make_card(8, 'Spade'),
+            make_card('J', 'Club')
+        ]
+        state = make_state(list(cards), [make_card(4, 'Club')], top)
+        res = state.apply_action(tuple(cards))
+        assert res.active_suit == 'Spade'
+
+    def test_user_bug_10s_8d_illegal(self):
+        """10S and 8D illegal (mismatched rank, no 7)."""
+        top = make_card(10, 'Spade')
+        c10s = make_card(10, 'Spade')
+        c8d = make_card(8, 'Diamond')
+        state = make_state([c10s, c8d], [make_card(3, 'Club')], top)
+        legal = state.get_legal_actions()
+        assert (c10s, c8d) not in legal
+
+    def test_user_bug_4d_4s_js_jd_illegal_without_7(self):
+        """4D 4S JS JD illegal without a 7 linking them."""
+        top = make_card(4, 'Diamond')
+        c4d = make_card(4, 'Diamond')
+        c4s = make_card(4, 'Spade')
+        cjs = make_card('J', 'Spade')
+        cjd = make_card('J', 'Diamond')
+        state = make_state([c4d, c4s, cjs, cjd], [make_card(3, 'Club')], top)
+        legal = state.get_legal_actions()
+        assert (c4d, c4s, cjs, cjd) not in legal
+
+    def test_user_bug_7c_5c_ac_as_counter_penalty_target(self):
+        """7C 5C AC AS targets opponent for penalty and doesn't reverse to current player."""
+        top = make_card(7, 'Club')
+        c7c = make_card(7, 'Club')
+        c5c = make_card(5, 'Club')
+        cac = make_card('A', 'Club')
+        cas = make_card('A', 'Spade')
+        state = make_state([c7c, c5c, cac, cas], [make_card(3, 'Club')], top, current_player=1)
+        res = state.apply_action((c7c, c5c, cac, cas))
+        # P1 played it, so penalty should target P2 (current_player=2)
+        assert res.current_player == 2
+        assert res.pending_draws == 5
+        assert res.turn_skipped is True
 
     def test_complex_7_combo_stack(self):
         """Test sequence 7 D + 7 H + 8 H + 9 H is valid on top of Diamond."""
@@ -476,19 +547,6 @@ class TestPenalties:
         res2 = state_double.apply_action((joker1, joker2))
         assert res2.active_suit == 'Spade'
 
-
-
-
-
-
-
-
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# 5. Deck reshuffling
-# ─────────────────────────────────────────────────────────────────────────────
-
 class TestDeckReshuffle:
     def test_reshuffle_possible_when_discard_gt_1(self):
         top   = make_card(4, 'Spade')
@@ -542,11 +600,6 @@ class TestDeckReshuffle:
         )
         assert not state.is_terminal()
 
-
-# ─────────────────────────────────────────────────────────────────────────────
-# 6. Terminal conditions and utility
-# ─────────────────────────────────────────────────────────────────────────────
-
 class TestTerminal:
     def test_p1_wins_when_hand_empty(self):
         top = make_card(4, 'Spade')
@@ -567,10 +620,6 @@ class TestTerminal:
         state = make_state([make_card(4, 'Heart')], [make_card(3, 'Club')], top)
         assert not state.is_terminal()
 
-
-# ─────────────────────────────────────────────────────────────────────────────
-# 7. Post-draw play opportunity (just_drew)
-# ─────────────────────────────────────────────────────────────────────────────
 
 class TestJustDrew:
     def test_after_draw_player_can_play_or_pass(self):

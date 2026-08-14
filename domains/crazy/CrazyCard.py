@@ -37,6 +37,8 @@ class CrazyCard:
         return self.rank == 5
 
     def __str__(self):
+        if self.rank == 0:
+            return "Joker"
         return f"{self.rank} of {self.suit}"
         
     def __repr__(self):

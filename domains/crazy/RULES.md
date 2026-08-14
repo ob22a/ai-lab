@@ -19,7 +19,7 @@ On your turn, you must play a card (or a combo of cards) matching the top card o
 3. **Active Suit** (if the suit was changed by a Wildcard)
 
 If you cannot make a valid move:
-* You must **Draw** a card from the deck.
+* You must **Draw** a card from the deck. The drawn card is placed at the rightmost end of your hand.
 * **Post-Draw Play Option**: If the drawn card is a valid play, you can play it immediately. Otherwise, you must choose **Pass Turn** to yield.
 
 ---
@@ -27,9 +27,10 @@ If you cannot make a valid move:
 ## 3. Special Card Abilities
 
 ### ✦ Wildcards (`8`, `J`, `Joker`)
-* Can be played on **any** card regardless of suit/rank.
+* Can be played on **any** card regardless of suit/rank as a solo move or at the start of a combo.
 * Allows the player to choose a new **Active Suit** (Spade, Heart, Diamond, or Club).
-* **Stacking Wildcards Exception**: If a wildcard is played immediately on top of another wildcard, it inherits the active suit and **cannot** change it, **unless** the first wildcard chose the *same* suit as the active suit before it was played. If it didn't change the suit, the second wildcard CAN change the suit.
+* **Wildcard Chaining Restriction**: Wildcards cannot be played together on their own (e.g., `8 + J + Joker` without matching ranks or a 7 is illegal). Wildcards only gain "play anywhere" status when starting a move or when embedded inside a 7-suit chain.
+* **Stacking Wildcards Exception**: If a wildcard is played immediately on top of another wildcard, it inherits the active suit and **cannot** change it, **unless** the first wildcard chose the *same* suit as the active suit before it was played.
 
 ### ✦ Draw Penalties
 These cards force the opponent to draw cards:
@@ -40,42 +41,32 @@ These cards force the opponent to draw cards:
 
 ### ✦ Skips (`5`)
 * Automatically forces the opponent to skip their turn.
-* **Non-cancelable**: The skipped player does not get a turn to react or draw; the turn automatically passes.
+* When played in a combo with penalty cards (e.g., `7C + 5C + AC + AS`), the draw penalty targets the opponent and forces them to draw cards. Upon finishing the draw, their turn is skipped and control returns to the attacker.
 
 ---
 
-## 4. Multi-Card Combos & Stacking
+## 4. Multi-Card Combos & 7-Chain Rules
+
 You can play multiple cards in a single turn in three ways:
 
 ### A. Rank Combos
 Play multiple cards of the same rank:
 * **Example**: Playing `4♠ + 4♥` on a Spade.
 * **Example**: Playing `2♣ + 2♥ + 2♠ + 2♦` (draw penalty stacks to **8**!).
+* **Illegal**: `4D + 4S + JS + JD` without a 7 bridging them is **illegal** (mismatched ranks).
 
-### B. 7-Suit Combos
-A `7` can start a suit run. Play a `7` first, followed by any other cards of that same suit:
-* **Example**: Playing `7♥ + 8♥ + 9♥` on a Heart.
-* **Example**: Playing `7♠ + 2♠` (causes opponent to draw **2** because 7 doesn't contribute penalty in suit combos).
-
-### C. Transition Combos (7-Rank to 7-Suit)
-A rank combo of 7s allows you to transition into a suit run of the last 7's suit:
-* **Example**: playing `7♦ + 7♥ + 8♥ + 9♥` on a Diamond. The `7♦` is played on Diamond rank/suit, the `7♥` rank-matches it, and then starts a Hearts run!
-* **Example**: playing `7♥ + 7♠ + 7♣ + 8♣ + 9♣` on a Heart.
+### B. 7-Suit Combos & 7-Chains
+A `7` at the start of a sequence opens a suit chain.
+* **Rules for 7-Chains**:
+  1. A 7 starts a suit run. Subsequent cards can match rank or match any 7's suit in the chain.
+  2. **Suit Determination in 7-Chains**: When wildcards (`8`, `J`, `Joker`) are embedded in a 7-chain (e.g., `7S + 8C + JH`), they lose their suit-changing power. The game's active suit is determined by the **topmost non-special card** in the combo (e.g., `7S + 8C + JH` results in Spade; `7D + 3D + 3C + 8S + Joker` results in Club).
+* **Example**: `7D + 7C + 3C + 3S + 8D + 8S + JC` is valid and results in suit **Spade**.
+* **Illegal Sequences**: `6D + 8D` (no 7 to glue), `10S + 8D` (mismatched rank, no 7).
 
 ---
 
 ## 5. Defense & Penalty Stacking
 If you are attacked by a draw penalty (e.g., +2 draws pending):
 * You do **not** have to draw immediately.
-* You can **Counter** by playing your own draw-penalty card(s) to stack and pass the penalty to your opponent.
-* **Defense Counter Restrictions**:
-  * Only cards with draw penalties (`2`, `7`, `A♠`, and `Joker`) can be played as defense counters. Wildcards `8` and `J` **cannot** be used to counter since they have no draw penalty.
-  * Counter combos must consist **entirely of cards of the same rank** (e.g., all `2`s, all `7`s, all `Jokers`, or a single `A♠`). Mixed/stacked suit combos (e.g., `7♥ + 2♥` or `7♥ + 3♥ + 4♥ + 6♥ + 2♥`) **cannot** be played as defense counters.
-* The penalty of a played combo is calculated by summing the contiguous run of matching penalty cards starting from the top (last card played) of the sequence.
-
-### Examples of Penalty Stacking:
-* **`7♥ + 2♥`**: The top card is `2`. The penalty is **2** (the 7 does not contribute).
-* **`7♥ + 2♥ + 2♦`**: The top card is `2` and the second card is `2`. Both are 2s. The penalty is **4**.
-* **`7♠ + 4♠ + 2♠`**: The top card is `2`. The card before it is `4` (non-penalty), which stops the stack. The penalty is **2**.
-* **`7♠ + 2♠ + 4♠`**: The top card is `4` (non-penalty). The penalty is **0**.
-* **`Joker + Joker`**: The penalty is **14**.
+* You can **Counter** by playing any valid combo that itself produces a net draw penalty target > 0 (e.g., `A♣ + A♠`, `7C + 5C + A♣ + A♠`, or same-rank penalty cards like `2♥ + 2♦`).
+* Countering stacks the new penalty on top of the incoming penalty and redirects the combined total to your opponent.

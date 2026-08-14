@@ -93,8 +93,8 @@ class CrazyVisualizer:
 
         # ── Pygame init ──────────────────────────────────────────────────────
         pygame.init()
-        self.screen = pygame.display.set_mode((self.W, self.H))
-        pygame.display.set_caption("AI Framework – Crazy Card Game")
+        self.screen = pygame.display.set_mode((self.W, self.H), pygame.RESIZABLE)
+        pygame.display.set_caption("AI Lab – Crazy Card Game")
 
         self.clock       = pygame.time.Clock()
         self.font_lg     = pygame.font.SysFont("consolas", 22, bold=True)
@@ -399,11 +399,11 @@ class CrazyVisualizer:
             u1 = state.get_utility(1)
             u2 = state.get_utility(2)
             if u1 > u2:
-                txt("◉  PLAYER 1 WINS!", self.font_lg, GOLD)
+                txt("PLAYER 1 WINS!", self.font_lg, GOLD)
             elif u2 > u1:
-                txt("◉  PLAYER 2 WINS!", self.font_lg, GOLD)
+                txt("PLAYER 2 WINS!", self.font_lg, GOLD)
             else:
-                txt("◉  DRAW!", self.font_lg, SILVER)
+                txt("DRAW!", self.font_lg, SILVER)
         else:
             cp = state.current_player
             if cp == 0:
@@ -440,7 +440,26 @@ class CrazyVisualizer:
             txt("  (no moves yet)", self.font_sm, TEXT_DIM, 2)
         for (actor, astr) in reversed(log_slice):
             col = YELLOW_HL if actor == 1 else SELECT_GLOW
-            txt(f"  P{actor}: {astr}", self.font_sm, col, 2)
+            # Privacy: Hide what opponent drew
+            if actor != self.human_player and "Drew" in astr:
+                astr = "Drew a card"
+            
+            # Wrap long move descriptions
+            full_text = f"  P{actor}: {astr}"
+            max_chars = max(15, (self.W - self.HUD_X - 25) // 8)
+            if len(full_text) > max_chars:
+                words = full_text.split()
+                line = ""
+                for word in words:
+                    if len(line) + len(word) + 1 <= max_chars:
+                        line += (" " if line else "") + word
+                    else:
+                        txt(line, self.font_sm, col, 1)
+                        line = "    " + word
+                if line:
+                    txt(line, self.font_sm, col, 2)
+            else:
+                txt(full_text, self.font_sm, col, 2)
 
         sep()
 
@@ -449,6 +468,7 @@ class CrazyVisualizer:
         for ctrl in ["[SPACE]  Auto-play on/off",
                      "[RIGHT]  Step forward",
                      "[LEFT]   Step backward",
+                     "[N]      New Game",
                      "[R]      Restart",
                      "[ESC]    Exit"]:
             txt(ctrl, self.font_sm, TEXT_DIM, 3)
@@ -555,6 +575,13 @@ class CrazyVisualizer:
         self.message        = "Game restarted!"
         self.message_clr    = GOLD
 
+    def new_game(self):
+        from demo.crazy_demo import make_full_deck_state
+        self.initial_state = make_full_deck_state()
+        self.restart()
+        self.message     = "New game started!"
+        self.message_clr = GOLD
+
     # ─────────────────────────────────────────────────────────────────────────
     # AI thread
     # ─────────────────────────────────────────────────────────────────────────
@@ -594,17 +621,29 @@ class CrazyVisualizer:
 
             cp = state.current_player
             if cp == 0:
-                # Resolve the CHANCE node automatically with a brief visual pause
-                time.sleep(0.25)
+                # Non-blocking pause for CHANCE node resolution
+                if not hasattr(self, '_chance_timer'):
+                    self._chance_timer = time.time()
+                    return
+                if time.time() - self._chance_timer < 0.25:
+                    return
+                delattr(self, '_chance_timer')
+
                 outcomes = state.get_chance_outcomes()
                 cards    = [c for c, p in outcomes]
                 probs    = [p for c, p in outcomes]
                 drawn    = random.choices(cards, weights=probs, k=1)[0]
                 new_state = state.apply_action(drawn)
                 actor = state.player_to_draw
-                self._push_state(new_state, action=f"Drew {drawn}", actor=actor)
-                dstr = str(drawn) if drawn else "nothing (deck empty)"
-                self.message     = f"P{actor} drew: {dstr}"
+                
+                # Privacy: mask drawn card details if opponent drew
+                if actor != self.human_player:
+                    self._push_state(new_state, action="Drew a card", actor=actor)
+                    self.message     = f"P{actor} drew a card"
+                else:
+                    self._push_state(new_state, action=f"Drew {drawn}", actor=actor)
+                    dstr = str(drawn) if drawn else "nothing (deck empty)"
+                    self.message     = f"You drew: {dstr}"
                 self.message_clr = SILVER
             elif self.players.get(cp) != "HUMAN":
                 self.ai_thinking = True
@@ -725,6 +764,11 @@ class CrazyVisualizer:
             if event.type == pygame.QUIT:
                 self.running = False
 
+            elif event.type == pygame.VIDEORESIZE:
+                self.W, self.H = event.w, event.h
+                self.HUD_X = self.W - 280
+                self.screen = pygame.display.set_mode((self.W, self.H), pygame.RESIZABLE)
+
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     if self.suit_picker is not None:
@@ -733,6 +777,8 @@ class CrazyVisualizer:
                         self.running = False
                 elif event.key == pygame.K_r:
                     self.restart()
+                elif event.key == pygame.K_n:
+                    self.new_game()
                 elif event.key == pygame.K_SPACE:
                     self.auto_run = not self.auto_run
                 elif event.key == pygame.K_LEFT:
