@@ -44,7 +44,7 @@ from search.informed.SMAstar import SMAStar
 from search.informed.IGBFS import IGBFS
 from search.informed.BidirectionalAStar import BidirectionalAStar
 
-TIMEOUT_S = 30
+TIMEOUT_S = 45
 
 UNINFORMED = [
     ("DFS",           DFS,                 {}),

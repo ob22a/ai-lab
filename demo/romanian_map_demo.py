@@ -1,13 +1,19 @@
-# =====================================================================
-# TWEAKABLE CONFIGURATION - Modify these variables to test variations!
-# =====================================================================
-# Solvers available:   AStar, GreedyBestFirstSearch, BFS, DFS, UCS, BidirectionalAStar
-# Cities available:    Arad, Zerind, Oradea, Sibiu, Timisoara, Lugoj, Mehadia,
-#                      Drobeta, Craiova, Rimnicu, Fagaras, Pitesti, Bucharest, etc.
-# =====================================================================
+"""
+demo/romanian_map_demo.py
+Romanian Map City Routing Search Demo (A*, GBFS, BFS, DFS, UCS, BidirectionalAStar).
+
+Usage:
+  python -m demo.romanian_map_demo [--vis] [--start Arad] [--goal Bucharest] [--algo AStar|GBFS|BFS|DFS|UCS|BidirectionalAStar]
+"""
 
 import sys
+import os
+import argparse
 import time
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+# --- Top-Level Imports for Easy Code Substitution ---
 from domains.romanian_map.RomanianMap import RomanianMapProblem
 from search.informed.AStar import AStar
 from search.informed.GBFS import GreedyBestFirstSearch
@@ -17,23 +23,40 @@ from search.uninformed.UCS import UCS
 from search.informed.BidirectionalAStar import BidirectionalAStar
 from visualization.RomanianMapVisualizer import RomanianMapVisualizer
 
-# ── User Configuration ────────────────────────────────────────────────
-START_CITY    = "Arad"
-GOAL_CITY     = "Bucharest"
-CHOSEN_SOLVER = BFS  # Options: AStar, GreedyBestFirstSearch, BFS, DFS, UCS, BidirectionalAStar
-VISUALIZE     = True   # Set to False for text-only output
 
+def main():
+    parser = argparse.ArgumentParser(description="Romanian Map Search Demo")
+    parser.add_argument("--vis", action="store_true", help="Launch interactive Pygame visualizer")
+    parser.add_argument("--start", type=str, default="Arad", help="Start city")
+    parser.add_argument("--goal", type=str, default="Bucharest", help="Goal city")
+    parser.add_argument("--algo", type=str, default="AStar",
+                        choices=["AStar", "GBFS", "BFS", "DFS", "UCS", "BidirectionalAStar"],
+                        help="Search algorithm class")
+    args = parser.parse_args()
 
-def solve_romanian_map(start=START_CITY, goal=GOAL_CITY, visualize=True):
-    print(f"\n--- Romanian Map Search: {start} -> {goal} ---")
-    problem = RomanianMapProblem(start, goal)
-    
-    print(f"Solving using {CHOSEN_SOLVER.__name__}...")
-    solver = CHOSEN_SOLVER(problem)
+    print("=" * 65)
+    print(f"      ROMANIAN MAP SEARCH DEMO ({args.start} -> {args.goal})")
+    print("=" * 65)
+
+    problem = RomanianMapProblem(args.start, args.goal)
+
+    solvers = {
+        "AStar": AStar,
+        "GBFS": GreedyBestFirstSearch,
+        "BFS": BFS,
+        "DFS": DFS,
+        "UCS": UCS,
+        "BidirectionalAStar": BidirectionalAStar
+    }
+    solver_cls = solvers.get(args.algo, AStar)
+
+    print(f"Executing {solver_cls.__name__}...")
+    solver = solver_cls(problem)
+
     t0 = time.time()
     res = solver.run()
     dur = time.time() - t0
-    
+
     if res.solution:
         path = []
         node = res.solution
@@ -41,26 +64,19 @@ def solve_romanian_map(start=START_CITY, goal=GOAL_CITY, visualize=True):
             path.append(node.state)
             node = node.parent
         path = list(reversed(path))
-        print(f"Path Cost: {res.path_cost:.1f} | Nodes Expanded: {res.nodes_expanded} | Runtime: {dur:.4f}s")
-        print(" -> ".join(path))
+        print(f"\nRoute Found in {dur:.4f}s ({res.nodes_expanded} nodes expanded, total cost = {res.path_cost:.1f} km):")
+        print("  " + " -> ".join(path))
     else:
-        print("No solution found!")
+        print("\nNo routing path found!")
 
-    if visualize:
-        print("\nLaunching Pygame Romanian Map Visualizer...")
-        vis = RomanianMapVisualizer(problem=problem, solver_class=CHOSEN_SOLVER)
+    if args.vis:
+        print(f"\nLaunching Pygame Romanian Map Visualizer with {solver_cls.__name__}...")
+        vis = RomanianMapVisualizer(problem=problem, solver_class=solver_cls)
         vis.run()
-
-
-def main():
-    visualize = VISUALIZE and ("--no-vis" not in sys.argv)
-    clean_argv = [a for a in sys.argv if a != "--no-vis"]
-    if len(clean_argv) == 3:
-        start_city, goal_city = clean_argv[1], clean_argv[2]
-        solve_romanian_map(start_city, goal_city, visualize=visualize)
     else:
-        solve_romanian_map(START_CITY, GOAL_CITY, visualize=visualize)
+        print("=" * 65)
 
 
 if __name__ == "__main__":
     main()
+

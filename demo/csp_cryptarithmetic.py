@@ -1,84 +1,88 @@
-# =====================================================================
-# TWEAKABLE CONFIGURATION - Modify these variables to test variations!
-# =====================================================================
-# Solvers available:   BacktrackingSolver
-# Heuristics available: mrv, mrv_with_degree_heuristic, lcv, None
-# Inferences available: forward_checking, None
-# =====================================================================
+"""
+demo/csp_cryptarithmetic.py
+Cryptarithmetic Letter Math CSP Solver Demo (SEND + MORE = MONEY).
+
+Usage:
+  python -m demo.csp_cryptarithmetic [--vis] [--addends SEND MORE] [--result MONEY] [--solver backtracking|minconflicts]
+"""
 
 import sys
+import os
+import argparse
 import time
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+# --- Top-Level Imports for Easy Code Substitution ---
 from domains.cryptarithmetic.Cryptarithmetic import CryptarithmeticCSP
 from csp.Backtracking import BacktrackingSolver, order_domain_values_default
+from csp.MinConflicts import MinConflictsSolver
 from csp.heuristics.MRV import mrv
 from csp.heuristics.DegreeHeuristic import mrv_with_degree_heuristic
 from csp.inference.ForwardChecking import forward_checking
 from visualization.CryptarithmeticVisualizer import CryptarithmeticVisualizer
 
-# ── User Configuration ────────────────────────────────────────────────
-PUZZLE_ADDENDS = ["SEND", "MORE"]
-PUZZLE_RESULT  = "MONEY"
-CHOSEN_SOLVER    = BacktrackingSolver
-CHOSEN_HEURISTIC = mrv_with_degree_heuristic  # Options: mrv, mrv_with_degree_heuristic, None
-CHOSEN_INFERENCE = forward_checking           # Options: forward_checking, None
-VISUALIZE        = True                        # Set to False for text-only output
 
+def main():
+    parser = argparse.ArgumentParser(description="Cryptarithmetic Letter Math CSP Demo")
+    parser.add_argument("--vis", action="store_true", help="Launch interactive Pygame visualizer")
+    parser.add_argument("--addends", nargs="+", default=["SEND", "MORE"], help="Addend words (e.g. SEND MORE)")
+    parser.add_argument("--result", type=str, default="MONEY", help="Result word (e.g. MONEY)")
+    parser.add_argument("--solver", type=str, default="backtracking", choices=["backtracking", "minconflicts"], help="Solver class")
+    args = parser.parse_args()
 
-def solve_crypto(addends, result, visualize=True):
+    addends = [w.upper() for w in args.addends]
+    result = args.result.upper()
     puzzle_str = f"{' + '.join(addends)} = {result}"
-    print(f"\n--- Cryptarithmetic CSP: {puzzle_str} ---")
-    
+
+    print("=" * 65)
+    print(f"      CRYPTARITHMETIC LETTER MATH DEMO ({puzzle_str})")
+    print("=" * 65)
+
     try:
         problem = CryptarithmeticCSP(addends, result)
     except ValueError as e:
-        print(f"Error: {e}")
+        print(f"Error initializing puzzle: {e}")
         return
-        
-    solver = CHOSEN_SOLVER(
-        problem,
-        select_unassigned_variable=CHOSEN_HEURISTIC,
-        order_domain_values=order_domain_values_default,
-        inference=CHOSEN_INFERENCE
-    )
-    
-    start = time.time()
+
+    if args.solver == "minconflicts":
+        solver = MinConflictsSolver(problem, max_steps=3000)
+    else:
+        solver = BacktrackingSolver(
+            problem,
+            select_unassigned_variable=mrv_with_degree_heuristic,
+            order_domain_values=order_domain_values_default,
+            inference=forward_checking
+        )
+
+    t0 = time.time()
     solution = solver.solve()
-    duration = time.time() - start
-    
-    if solver.status == "SUCCESS":
-        print(f"Solution found in {duration:.4f} seconds! (Nodes expanded: {solver.nodes_expanded})")
-        print("Assignment:")
+    dur = time.time() - t0
+
+    if solver.status == "SUCCESS" and solution:
+        print(f"\nSolution Found in {dur:.4f}s! (Nodes expanded: {solver.nodes_expanded})\n")
+        print("Letter Assignment:")
         for char, digit in sorted(solution.items()):
             print(f"  {char} = {digit}")
-            
-        print("\nVerification:")
+
+        print("\nEquation Verification:")
         for word in addends:
             val = "".join(str(solution[c]) for c in word)
-            print(f"  {word:10} -> {val:10}")
-        print("  " + "-"*20)
+            print(f"  {word:10s} -> {val:10s}")
+        print("  " + "-" * 24)
         res_val = "".join(str(solution[c]) for c in result)
-        print(f"  {result:10} -> {res_val:10}")
+        print(f"  {result:10s} -> {res_val:10s}")
     else:
-        print(f"NO SOLUTION EXISTS. Searched in {duration:.4f} seconds. (Nodes expanded: {solver.nodes_expanded})")
+        print(f"\nNo valid letter assignment exists for this puzzle.")
 
-    if visualize:
+    if args.vis:
         print("\nLaunching Pygame Cryptarithmetic Visualizer...")
-        vis = CryptarithmeticVisualizer(puzzle=puzzle_str, solver_class=CHOSEN_SOLVER)
+        vis = CryptarithmeticVisualizer(puzzle=puzzle_str, solver_class=BacktrackingSolver if args.solver == "backtracking" else MinConflictsSolver)
         vis.run()
-
-
-def main():
-    visualize = VISUALIZE and ("--no-vis" not in sys.argv)
-    clean_argv = [a for a in sys.argv if a != "--no-vis"]
-
-    if len(clean_argv) > 2:
-        args = clean_argv[1:]
-        addends = [w.upper() for w in args[:-1]]
-        result = args[-1].upper()
-        solve_crypto(addends, result, visualize=visualize)
     else:
-        solve_crypto(PUZZLE_ADDENDS, PUZZLE_RESULT, visualize=visualize)
+        print("=" * 65)
 
 
 if __name__ == "__main__":
     main()
+

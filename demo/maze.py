@@ -26,14 +26,18 @@ from domains.maze.RandomizedKruskal import RandomizedKruskalGenerator
 from domains.maze.MazeSearch import MazeSearchProblem
 
 # Search Solvers
-from search.uninformed.BFS import BreadthFirstSearch
-from search.uninformed.DFS import DepthFirstSearch
+from search.uninformed.BFS import BFS
+from search.uninformed.DFS import DFS
+from search.uninformed.BidirectionalSearch import BidirectionalSearch
+from search.uninformed.IDDFS import TrueIDDFS, OptimizedIDDFS
+from search.uninformed.UCS import UCS
 from search.informed.AStar import AStar
 from search.informed.GBFS import GreedyBestFirstSearch
-from search.informed.IGBFS import ImprovedGBFS
+from search.informed.IGBFS import IGBFS
 from search.informed.BidirectionalAStar import BidirectionalAStar
 from search.informed.IDAStar import IDAStar
 from search.informed.SMAstar import SMAStar
+from search.informed.RBFS import RBFS
 
 from visualization.MazeVisualizer import MazeSearchVisualizer
 
@@ -65,12 +69,18 @@ def main():
     solvers = {
         "AStar": AStar(problem),
         "GBFS": GreedyBestFirstSearch(problem),
-        "IGBFS": ImprovedGBFS(problem),
+        "IGBFS": GreedyBestFirstSearch(problem),
         "BidirectionalAStar": BidirectionalAStar(problem),
         "IDAStar": IDAStar(problem),
-        "SMAStar": SMAStar(problem, memory_limit=500),
-        "BFS": BreadthFirstSearch(problem),
-        "DFS": DepthFirstSearch(problem),
+        "SMAStar": SMAStar(problem),
+        "BFS": BFS(problem),
+        "DFS": DFS(problem),
+        "BiSearch": BidirectionalSearch(problem),
+        "IDDFS-T": TrueIDDFS(problem,start_depth=10),
+        "IDDFS-O": OptimizedIDDFS(problem),
+        "UCS": UCS(problem),
+        "RBFS": RBFS(problem),
+        "IGBFS":IGBFS(problem)
     }
 
     solver = solvers.get(args.algo, AStar(problem))
@@ -98,4 +108,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    main()
