@@ -23,16 +23,15 @@ import time
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from games.AlphaBeta import AlphaBetaSolver
-from games.MCTS import MCTSSolver
+from games.MCTS import MCTSSolver, InformationSetMCTSSolver
 from games.Minimax import MinimaxSolver
 from games.RandomSolver import RandomSolver
 from games.heuristics.ObssaHeuristic import ObssaHeuristicSolver
 
 from domains.tic_tac_toe.TicTacToe import TicTacToeState
 from domains.connect_four.ConnectFour import ConnectFourState
+from domains.crazy.CrazyState import determinize_crazy_state
 from demo.crazy_demo import make_full_deck_state
-
-
 from domains.othello.Othello import OthelloState
 from domains.othello.OthelloEval import othello_evaluation
 from games.AlphaBetaOrdered import AlphaBetaOrderedSolver
@@ -100,7 +99,7 @@ def run_game_tournament(num_runs=30, target_games=None):
         ]),
         ("crazy", "Crazy Card Game", lambda: make_full_deck_state(), [
             ("Obssa Heuristic", ObssaHeuristicSolver()),
-            ("MCTS(n=30)", MCTSSolver(num_simulations=30)),
+            ("IS-MCTS(n=30)", InformationSetMCTSSolver(determinize_crazy_state, num_simulations=30)),
             ("Random", RandomSolver())
         ])
     ]

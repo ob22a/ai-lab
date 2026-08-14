@@ -384,3 +384,42 @@ class CrazyState(GameState):
                 next_player = 2 if next_player == 1 else 1
             
             return CrazyState(p1, p2, deck, discard, next_player, active_suit, None, 0, False, wild_suit_change_allowed=new_wild_suit_change_allowed)
+
+
+def determinize_crazy_state(state: CrazyState) -> CrazyState:
+    """
+    Creates a hypothetical state for Information Set MCTS (IS-MCTS).
+    The observing player keeps their own hand and discard pile intact, while the
+    opponent's hidden hand cards are randomly sampled from the unobserved deck pool!
+    """
+    import random
+    cp = state.current_player
+    my_hand = list(state.p1_hand if cp == 1 else state.p2_hand)
+    opp_hand_size = len(state.p2_hand if cp == 1 else state.p1_hand)
+
+    # Pool of unobserved cards (deck pool)
+    deck_pool = []
+    for card, count in state.deck_counts.items():
+        deck_pool.extend([card] * count)
+
+    random.shuffle(deck_pool)
+    sampled_opp_hand = deck_pool[:opp_hand_size]
+    remaining_deck = deck_pool[opp_hand_size:]
+
+    new_deck_counts = {}
+    for card in remaining_deck:
+        new_deck_counts[card] = new_deck_counts.get(card, 0) + 1
+
+    p1_h = my_hand if cp == 1 else sampled_opp_hand
+    p2_h = sampled_opp_hand if cp == 1 else my_hand
+
+    return CrazyState(
+        p1_hand=p1_h,
+        p2_hand=p2_h,
+        deck_counts=new_deck_counts,
+        discard_pile=list(state.discard_pile),
+        current_player=cp,
+        pending_draws=state.pending_draws,
+        just_drew=getattr(state, 'just_drew', False)
+    )
+
