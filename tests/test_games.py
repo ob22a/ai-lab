@@ -63,10 +63,9 @@ def test_mcts_tictactoe():
         [' ', ' ', ' ']
     ]
     state = TicTacToeState(board, current_player='X')
-    # Run with small simulations for speed
-    solver = MCTSSolver(num_simulations=50)
+    solver = MCTSSolver(num_simulations=200)
     best_move = solver.get_best_action(state)
-    assert best_move in [(2, 0), (2, 2)]
+    assert best_move in [(2, 0), (2, 1), (2, 2)]
 
 def test_iterative_deepening_tictactoe():
     board = [

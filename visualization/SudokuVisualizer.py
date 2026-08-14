@@ -40,6 +40,8 @@ class SudokuVisualizer:
         self.running = True
         self.paused = True
         self.auto_run = False
+        self.clock = pygame.time.Clock()
+        self.fps = 30
         
         # State tracking
         self.initial_assignment = {var: vals[0] for var, vals in self.problem.domains.items() if len(vals) == 1}

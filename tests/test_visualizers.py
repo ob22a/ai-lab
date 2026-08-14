@@ -229,3 +229,64 @@ def test_crazy_visualizer_headless():
     assert vis.history_index == 0
     vis.render()
 
+
+def test_tsp_visualizer_modes_headless():
+    from visualization.TSPVisualizer import TSPVisualizer
+    from search.local.LocalBeamSearch import LocalBeamSearch
+    from search.local.GeneticAlgorithm import GeneticAlgorithm
+    from search.local.SimulatedAnnealing import SimulatedAnnealing
+
+    # 1. Test Beam Search Mode
+    vis_beam = TSPVisualizer(num_cities=15, solver_class=LocalBeamSearch, fps=10)
+    assert len(vis_beam.history) > 0
+    assert vis_beam.history[0]["mode"] == "beam"
+    vis_beam.render()
+    vis_beam.selected_sub_idx = 1
+    vis_beam.render()
+
+    # 2. Test Genetic Algorithm Mode
+    vis_ga = TSPVisualizer(num_cities=15, solver_class=GeneticAlgorithm, fps=10)
+    assert len(vis_ga.history) > 0
+    assert vis_ga.history[0]["mode"] == "ga"
+    vis_ga.render()
+    vis_ga.selected_sub_idx = 1
+    vis_ga.render()
+
+    # 3. Test Simulated Annealing Mode
+    vis_sa = TSPVisualizer(num_cities=15, solver_class=SimulatedAnnealing, fps=10)
+    assert len(vis_sa.history) > 0
+    assert vis_sa.history[0]["mode"] == "single"
+    vis_sa.render()
+
+
+def test_tree_decomp_and_cutset_visualizers_headless():
+    from domains.map_coloring.MapColoring import MapColoringCSP
+    from csp.TreeDecomposition import TreeDecompositionSolver, auto_tree_decomposition
+    from csp.CycleCutset import CycleCutsetSolver, find_cycle_cutset
+    from visualization.TreeDecompositionVisualizer import TreeDecompositionVisualizer
+    from visualization.CycleCutsetVisualizer import CycleCutsetVisualizer
+
+    # 1. Tree Decomposition Visualizer
+    problem_td = MapColoringCSP()
+    decomp = auto_tree_decomposition(problem_td)
+    solver_td = TreeDecompositionSolver(problem_td, decomposition=decomp)
+    vis_td = TreeDecompositionVisualizer(problem_td, solver_td, fps=10)
+    assert vis_td.running is True
+    assert len(vis_td.history) > 0
+    vis_td.render()
+    vis_td.history_index = min(1, len(vis_td.history) - 1)
+    vis_td.render()
+
+    # 2. Cycle Cutset Visualizer
+    problem_cc = MapColoringCSP()
+    cutset = find_cycle_cutset(problem_cc)
+    solver_cc = CycleCutsetSolver(problem_cc, cutset=cutset)
+    vis_cc = CycleCutsetVisualizer(problem_cc, solver_cc, fps=10)
+    assert vis_cc.running is True
+    assert len(vis_cc.history) > 0
+    vis_cc.render()
+    vis_cc.history_index = min(1, len(vis_cc.history) - 1)
+    vis_cc.render()
+
+
+

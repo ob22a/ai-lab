@@ -471,8 +471,6 @@ class CrazyVisualizer:
                         cur_line = "    " + w
             if cur_line:
                 txt(cur_line, self.font_sm, col, 2)
-            else:
-                txt(full_text, self.font_sm, col, 2)
 
         sep()
 
