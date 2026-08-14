@@ -67,6 +67,7 @@ class BoardGameVisualizer:
         self.history_index = 0
         self.ai_thread = None
         self.ai_turn_id = 0
+        self.selected_pos = None
 
     def restart(self):
         self.state = self.initial_state
@@ -74,6 +75,7 @@ class BoardGameVisualizer:
         self.history_index = 0
         self.ai_thinking = False
         self.ai_turn_id += 1
+        self.selected_pos = None
 
     def draw_board(self):
         # Draw background
@@ -99,18 +101,21 @@ class BoardGameVisualizer:
                         sq_rect = pygame.Rect(c * self.cell_size, r * self.cell_size, self.cell_size, self.cell_size)
                         pygame.draw.rect(self.screen, (100, 50, 20), sq_rect)
 
-                    if val in (1, 10, '1', '10', 'P1', 'K1'):  # Player 1 (Red / Dark)
+                    if val in (1, 2):  # Player 1 (Red)
                         pygame.draw.circle(self.screen, (200, 40, 40), center, self.cell_size // 2 - 6)
                         pygame.draw.circle(self.screen, (255, 255, 255), center, self.cell_size // 2 - 6, 2)
-                        if val in (10, '10', 'K1'): # King crown
+                        if val == 2: # King crown
                             kt = self.font.render("★", True, (255, 215, 0))
                             self.screen.blit(kt, (center[0] - kt.get_width()//2, center[1] - kt.get_height()//2))
-                    elif val in (2, 20, '2', '20', 'P2', 'K2'): # Player 2 (White / Light)
+                    elif val in (-1, -2): # Player 2 (White)
                         pygame.draw.circle(self.screen, (240, 240, 240), center, self.cell_size // 2 - 6)
                         pygame.draw.circle(self.screen, (20, 20, 20), center, self.cell_size // 2 - 6, 2)
-                        if val in (20, '20', 'K2'): # King crown
+                        if val == -2: # King crown
                             kt = self.font.render("★", True, (255, 215, 0))
                             self.screen.blit(kt, (center[0] - kt.get_width()//2, center[1] - kt.get_height()//2))
+
+                    if hasattr(self, "selected_pos") and self.selected_pos == (r, c):
+                        pygame.draw.rect(self.screen, (255, 255, 0), sq_rect, 3)
 
                 elif self.rows == 6: # Connect Four
                     if val == self.p1_id:
@@ -259,9 +264,37 @@ class BoardGameVisualizer:
             
         legal_actions = self.state.get_legal_actions()
         
-        if self.rows == 6: # Connect Four actions are just column indices (if that's how it's implemented)
-            # Actually, ConnectFourState returns column indices, let's check
-            # We'll just allow any action that matches (r, c) or c
+        if hasattr(self.state, "__class__") and "Checkers" in self.state.__class__.__name__:
+            if self.selected_pos is None:
+                # Select a piece
+                piece = self.state.board[r][c]
+                cp = self.state.get_current_player()
+                if (cp == 1 and piece > 0) or (cp == -1 and piece < 0):
+                    self.selected_pos = (r, c)
+            else:
+                # Try to move selected piece to (r, c)
+                action = None
+                for a in legal_actions:
+                    if a[0] == self.selected_pos and a[-1] == (r, c):
+                        action = a
+                        break
+                
+                if action:
+                    self.state = self.state.apply_action(action)
+                    self.history.append(self.state)
+                    self.history_index += 1
+                    self.selected_pos = None
+                else:
+                    # Deselect or reselect
+                    piece = self.state.board[r][c]
+                    cp = self.state.get_current_player()
+                    if (cp == 1 and piece > 0) or (cp == -1 and piece < 0):
+                        self.selected_pos = (r, c)
+                    else:
+                        self.selected_pos = None
+            return
+
+        if self.rows == 6: # Connect Four
             action = None
             if c in legal_actions:
                 action = c
@@ -274,6 +307,7 @@ class BoardGameVisualizer:
             self.state = self.state.apply_action(action)
             self.history.append(self.state)
             self.history_index += 1
+            self.selected_pos = None
             
     def run(self):
         self.render()

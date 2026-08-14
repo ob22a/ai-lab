@@ -1,15 +1,15 @@
 """
 demo/games_demo.py
-Unified Adversarial Board Game AI Demo (Tic-Tac-Toe, Connect Four, Othello).
+Unified Adversarial Board Game AI Demo (Tic-Tac-Toe, Connect Four, Othello, Checkers).
 
 Features:
-  - Game selection: Tic-Tac-Toe, Connect Four, Othello (Reversi)
+  - Game selection: Tic-Tac-Toe, Connect Four, Othello (Reversi), Checkers
   - Agent selection: Human vs AI, AI vs AI, Human vs Human
   - Solvers: AlphaBeta, MCTS (Monte Carlo Tree Search), Random
   - Pygame interactive board game visualizer
 
 Usage:
-  python -m demo.games_demo [--vis] [--game tictactoe|connect_four|othello] [--p1 human|alphabeta|mcts|random] [--p2 human|alphabeta|mcts|random]
+  python -m demo.games_demo [--vis] [--game tictactoe|connect_four|othello|checkers] [--p1 human|alphabeta|mcts|random] [--p2 human|alphabeta|mcts|random]
 """
 
 import sys
@@ -22,6 +22,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 from domains.tic_tac_toe.TicTacToe import TicTacToeState
 from domains.connect_four.ConnectFour import ConnectFourState
 from domains.othello.Othello import OthelloState
+from domains.checkers.Checkers import CheckersState
 
 # Solvers & Heuristics
 from games.AlphaBeta import AlphaBetaSolver
@@ -46,8 +47,8 @@ def make_agent(agent_str, game_name):
 def main():
     parser = argparse.ArgumentParser(description="Unified Board Game AI Demo")
     parser.add_argument("--vis", action="store_true", help="Launch interactive Pygame visualizer")
-    parser.add_argument("--game", type=str, default="tictactoe", choices=["tictactoe", "connect_four", "othello"],
-                        help="Game domain (tictactoe, connect_four, othello)")
+    parser.add_argument("--game", type=str, default="tictactoe", choices=["tictactoe", "connect_four", "othello", "checkers"],
+                        help="Game domain (tictactoe, connect_four, othello, checkers)")
     parser.add_argument("--p1", type=str, default="human", choices=["human", "alphabeta", "mcts", "random"],
                         help="Player 1 agent type")
     parser.add_argument("--p2", type=str, default="mcts", choices=["human", "alphabeta", "mcts", "random"],
@@ -64,6 +65,9 @@ def main():
         cell_size = 90
     elif args.game == "othello":
         initial_state = OthelloState()
+        cell_size = 75
+    elif args.game == "checkers":
+        initial_state = CheckersState()
         cell_size = 75
     else:
         initial_state = TicTacToeState()

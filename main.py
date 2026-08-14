@@ -36,7 +36,7 @@ DEMO_REGISTRY = [
 
     # Category: Game AI
     {"category": "GAME AI", "id": "crazy", "name": "Crazy Card Game (Obssa Heuristic, MCTS, AlphaBeta)", "dir": "demo/crazy_demo.py", "vis": True},
-    {"category": "GAME AI", "id": "games", "name": "Board Game AI (Tic-Tac-Toe, Connect Four, Othello)", "dir": "demo/games_demo.py", "vis": True},
+    {"category": "GAME AI", "id": "games", "name": "Board Game AI (Tic-Tac-Toe, Connect Four, Othello, Checkers)", "dir": "demo/games_demo.py", "vis": True},
 ]
 
 

@@ -3,9 +3,9 @@ from typing import List, Tuple, Any
 from games.GameState import GameState
 
 EMPTY = 0
-P1_MAN = 1    # Player 1 (MAX) moves down (row index increases)
+P1_MAN = 1    # Player 1 (MAX) starts at bottom, moves up (row index decreases)
 P1_KING = 2
-P2_MAN = -1   # Player 2 (MIN) moves up (row index decreases)
+P2_MAN = -1   # Player 2 (MIN) starts at top, moves down (row index increases)
 P2_KING = -2
 
 # Precompute Zobrist hashing tables
@@ -40,11 +40,11 @@ class CheckersState(GameState):
         for r in range(3):
             for c in range(8):
                 if (r + c) % 2 == 1:
-                    board[r][c] = P1_MAN
+                    board[r][c] = P2_MAN
         for r in range(5, 8):
             for c in range(8):
                 if (r + c) % 2 == 1:
-                    board[r][c] = P2_MAN
+                    board[r][c] = P1_MAN
         return board
         
     def _compute_initial_hash(self) -> int:
@@ -77,9 +77,9 @@ class CheckersState(GameState):
 
     def _get_move_directions(self, piece: int) -> List[Tuple[int, int]]:
         if piece == P1_MAN:
-            return [(1, -1), (1, 1)]
-        elif piece == P2_MAN:
             return [(-1, -1), (-1, 1)]
+        elif piece == P2_MAN:
+            return [(1, -1), (1, 1)]
         elif piece in (P1_KING, P2_KING):
             return [(1, -1), (1, 1), (-1, -1), (-1, 1)]
         return []
@@ -144,9 +144,9 @@ class CheckersState(GameState):
                     
                     # Handle king promotion during a jump sequence
                     promoted_piece = piece
-                    if piece == P1_MAN and end_r == 7:
+                    if piece == P1_MAN and end_r == 0:
                         promoted_piece = P1_KING
-                    elif piece == P2_MAN and end_r == 0:
+                    elif piece == P2_MAN and end_r == 7:
                         promoted_piece = P2_KING
                         
                     new_board[end_r][end_c] = promoted_piece
@@ -195,9 +195,9 @@ class CheckersState(GameState):
                 
         # Determine final position and promotion
         end_r, end_c = action[-1]
-        if piece == P1_MAN and end_r == 7:
+        if piece == P1_MAN and end_r == 0:
             piece = P1_KING
-        elif piece == P2_MAN and end_r == 0:
+        elif piece == P2_MAN and end_r == 7:
             piece = P2_KING
             
         # Place piece at end
