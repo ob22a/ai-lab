@@ -1,39 +1,34 @@
+# =====================================================================
+# TWEAKABLE CONFIGURATION - Modify these variables to test variations!
+# =====================================================================
+# Solvers available:   BacktrackingSolver, MinConflictsSolver
+# Heuristics available: mrv, mrv_with_degree_heuristic, lcv, None
+# Inferences available: mac, forward_checking, None
+# =====================================================================
+
+import sys
 import time
 from domains.timetabling.Timetabling import TimetablingCSP
-from csp.Backtracking import BacktrackingSolver, unassigned_variable_default, order_domain_values_default
+from csp.Backtracking import BacktrackingSolver, order_domain_values_default
 from csp.heuristics.MRV import mrv
 from csp.heuristics.DegreeHeuristic import mrv_with_degree_heuristic
 from csp.inference.MAC import mac
+from csp.inference.ForwardChecking import forward_checking
+from visualization.TimetablingVisualizer import TimetablingVisualizer, DEFAULT_CLASSES, DEFAULT_ROOMS, DEFAULT_TIMESLOTS
+
+# ── User Configuration ────────────────────────────────────────────────
+CHOSEN_SOLVER = BacktrackingSolver
+CHOSEN_HEURISTIC = mrv_with_degree_heuristic  # Options: mrv, mrv_with_degree_heuristic, None
+CHOSEN_INFERENCE = mac                        # Options: mac, forward_checking, None
+VISUALIZE = True                              # Set to False for text-only output
 
 
-def solve_timetabling():
-    print("\n--- University Timetabling CSP ---")
+def solve_timetabling(visualize=True):
+    print("\n--- University Timetabling CSP Demo ---")
     
-    # 10 Courses
-    classes = [
-        {'id': 'CS101', 'instructor': 'Alice', 'capacity': 50},
-        {'id': 'CS102', 'instructor': 'Bob', 'capacity': 30},
-        {'id': 'CS201', 'instructor': 'Alice', 'capacity': 40},
-        {'id': 'MATH101', 'instructor': 'Charlie', 'capacity': 100},
-        {'id': 'MATH201', 'instructor': 'Charlie', 'capacity': 20},
-        {'id': 'PHYS101', 'instructor': 'Dave', 'capacity': 60},
-        {'id': 'PHYS201', 'instructor': 'Eve', 'capacity': 30},
-        {'id': 'ENG101', 'instructor': 'Frank', 'capacity': 25},
-        {'id': 'ENG102', 'instructor': 'Frank', 'capacity': 25},
-        {'id': 'ART101', 'instructor': 'Grace', 'capacity': 15},
-    ]
-    
-    # 5 Rooms
-    rooms = [
-        {'id': 'RoomA', 'capacity': 100}, # Large lecture hall
-        {'id': 'RoomB', 'capacity': 60},
-        {'id': 'RoomC', 'capacity': 40},
-        {'id': 'RoomD', 'capacity': 30},
-        {'id': 'RoomE', 'capacity': 20},
-    ]
-    
-    # 5 Timeslots (simplified)
-    timeslots = ['Mon 9AM', 'Mon 11AM', 'Wed 9AM', 'Wed 11AM', 'Fri 9AM']
+    classes = DEFAULT_CLASSES
+    rooms = DEFAULT_ROOMS
+    timeslots = DEFAULT_TIMESLOTS
     
     try:
         problem = TimetablingCSP(classes, rooms, timeslots)
@@ -43,11 +38,11 @@ def solve_timetabling():
         
     print(f"Scheduling {len(classes)} classes into {len(rooms)} rooms and {len(timeslots)} timeslots...")
     
-    solver = BacktrackingSolver(
+    solver = CHOSEN_SOLVER(
         problem,
-        select_unassigned_variable=mrv_with_degree_heuristic,
+        select_unassigned_variable=CHOSEN_HEURISTIC,
         order_domain_values=order_domain_values_default,
-        inference=mac
+        inference=CHOSEN_INFERENCE
     )
     
     start = time.time()
@@ -57,8 +52,6 @@ def solve_timetabling():
     if solver.status == "SUCCESS":
         print(f"Solution found in {duration:.4f} seconds! (Nodes expanded: {solver.nodes_expanded})")
         print("\nSchedule:")
-        
-        # Group by timeslot for nice printing
         schedule_by_time = {t: [] for t in timeslots}
         for cls_id, (room, timeslot) in solution.items():
             schedule_by_time[timeslot].append(f"{cls_id:8} (Room: {room:6})")
@@ -70,9 +63,15 @@ def solve_timetabling():
     else:
         print(f"NO SOLUTION EXISTS. Searched in {duration:.4f} seconds.")
 
+    if visualize:
+        print("\nLaunching Pygame Timetabling Visualizer...")
+        vis = TimetablingVisualizer(problem=problem, solver_class=CHOSEN_SOLVER)
+        vis.run()
+
 
 def main():
-    solve_timetabling()
+    visualize = VISUALIZE and ("--no-vis" not in sys.argv)
+    solve_timetabling(visualize=visualize)
 
 
 if __name__ == "__main__":

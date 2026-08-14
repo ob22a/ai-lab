@@ -20,6 +20,7 @@ from domains.crazy.CrazyCard import create_deck, CrazyCard
 from domains.crazy.CrazyState import CrazyState
 from games.MCTS import MCTSSolver
 from games.RandomSolver import RandomSolver
+from games.heuristics.ObssaHeuristic import ObssaHeuristicSolver
 from visualization.CrazyVisualizer import CrazyVisualizer
 
 
@@ -76,12 +77,13 @@ def make_simplified_deck_state(p1_cards: int = 5, p2_cards: int = 6) -> CrazySta
 
 def main():
     print("=" * 60)
-    print("  CRAZY CARD GAME  –  AI Framework")
+    print("  CRAZY CARD GAME  –  AI Lab")
     print("=" * 60)
 
     # ── Choose agents ─────────────────────────────────────────────────────
     # Player 1 is YOU (human).  Change to MCTSSolver() to watch AI vs AI.
-    p1 = "HUMAN"
+    # p1 = "HUMAN"
+    p1 = ObssaHeuristicSolver()
 
     # Player 2 is the AI.  Change num_simulations / algorithm as desired.
     p2 = MCTSSolver(num_simulations=200)

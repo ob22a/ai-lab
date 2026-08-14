@@ -8,7 +8,7 @@ def main():
     print("Initializing Sokoban Visualizer with Randomized Level...")
     
     # Procedurally generate a guaranteed solvable level using Reverse Play
-    generator = RandomizedSokobanGenerator(width=10, height=10, num_boxes=4, num_pulls=200)
+    generator = RandomizedSokobanGenerator(width=10, height=10, num_boxes=6, num_pulls=10000)
     level = generator.generate()
     
     print("Generated Level:")
