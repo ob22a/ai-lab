@@ -1,10 +1,31 @@
 Game,Agent 1,Agent 2,Agent 1 Wins,Agent 2 Wins,Draws,Avg Game Time (s)
-Tic-Tac-Toe,AlphaBeta,MCTS(n=30),3,0,0,0.2385
-Tic-Tac-Toe,AlphaBeta,Random,3,0,0,0.1813
-Tic-Tac-Toe,MCTS(n=30),Random,3,0,0,0.0043
-Connect Four,AlphaBeta(d=4),MCTS(n=30),3,0,0,0.1324
-Connect Four,AlphaBeta(d=4),Random,3,0,0,0.0874
-Connect Four,MCTS(n=30),Random,2,1,0,0.0892
-Crazy Card Game,Obssa Heuristic,MCTS(n=30),1,1,1,2.4342
-Crazy Card Game,Obssa Heuristic,Random,3,0,0,0.0034
-Crazy Card Game,MCTS(n=30),Random,2,0,1,3.6563
+Tic-Tac-Toe,Minimax,AlphaBeta,0,0,5,3.982086
+Tic-Tac-Toe,Minimax,AlphaBetaOrdered,5,0,0,3.943572
+Tic-Tac-Toe,Minimax,MCTS(n=30),5,0,0,4.270522
+Tic-Tac-Toe,Minimax,IterativeDeepening,0,0,5,3.940993
+Tic-Tac-Toe,Minimax,Random,5,0,0,4.322804
+Tic-Tac-Toe,AlphaBeta,AlphaBetaOrdered,5,0,0,1.194358
+Tic-Tac-Toe,AlphaBeta,MCTS(n=30),5,0,0,1.282321
+Tic-Tac-Toe,AlphaBeta,IterativeDeepening,0,0,5,1.593
+Tic-Tac-Toe,AlphaBeta,Random,5,0,0,1.42725
+Tic-Tac-Toe,AlphaBetaOrdered,MCTS(n=30),4,0,1,1.154805
+Tic-Tac-Toe,AlphaBetaOrdered,IterativeDeepening,0,0,5,1.284656
+Tic-Tac-Toe,AlphaBetaOrdered,Random,5,0,0,1.120701
+Tic-Tac-Toe,MCTS(n=30),IterativeDeepening,0,2,3,1.370991
+Tic-Tac-Toe,MCTS(n=30),Random,5,0,0,1.451291
+Tic-Tac-Toe,IterativeDeepening,Random,5,0,0,1.780036
+Connect Four,AlphaBeta(d=4),MCTS(n=30),1,4,0,1.411262
+Connect Four,AlphaBeta(d=4),Random,5,0,0,1.425689
+Connect Four,MCTS(n=30),Random,5,0,0,1.333471
+Othello (Reversi),AlphaBeta(d=3),MCTS(n=30),5,0,0,3.782627
+Othello (Reversi),AlphaBeta(d=3),Random,5,0,0,1.446805
+Othello (Reversi),MCTS(n=30),Random,5,0,0,3.46425
+Checkers,AlphaBeta(d=4),AlphaBeta(d=6),0,5,0,6.162457
+Checkers,AlphaBeta(d=4),MCTS(n=100),0,5,0,21.721232
+Checkers,AlphaBeta(d=4),Random,5,0,0,1.778643
+Checkers,AlphaBeta(d=6),MCTS(n=100),2,3,0,25.324356
+Checkers,AlphaBeta(d=6),Random,5,0,0,6.488075
+Checkers,MCTS(n=100),Random,5,0,0,8.749236
+Crazy Card Game,Obssa Heuristic,IS-MCTS(n=30),4,1,0,2.501264
+Crazy Card Game,Obssa Heuristic,Random,3,2,0,1.199025
+Crazy Card Game,IS-MCTS(n=30),Random,4,1,0,2.826416
