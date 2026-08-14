@@ -59,7 +59,12 @@ class IDAStar(SearchAlgorithm):
 
         result.metadata["num_iterations"] = self.num_iterations
 
-        return result
+        try:
+            from utils.auto_logger import auto_log_result
+            auto_log_result(self, res)
+        except Exception:
+            pass
+        return result
 
     def search_step(self):
 

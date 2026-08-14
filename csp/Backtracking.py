@@ -33,7 +33,7 @@ class BacktrackingSolver(CSPSolver):
         self.on_assign = None
         self.on_unassign = None
 
-    def solve(self) -> Dict[Any, Any]:
+    def _solve_impl(self) -> Dict[Any, Any]:
         self.reset()
         current_domains = {var: list(values) for var, values in self.problem.domains.items()}
         result = self.backtrack(self.assignment, current_domains)

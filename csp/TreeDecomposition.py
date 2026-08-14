@@ -245,7 +245,7 @@ class TreeDecompositionSolver(CSPSolver):
             
         return cluster_domains
 
-    def solve(self) -> Optional[Dict[Any, Any]]:
+    def _solve_impl(self) -> Optional[Dict[Any, Any]]:
         """
         Executes tree decomposition solving.
         """

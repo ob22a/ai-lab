@@ -117,6 +117,16 @@ def main():
         fps=30
     )
     vis.run()
+    
+    try:
+        from utils.auto_logger import auto_log_game
+        if vis.state.is_terminal():
+            winner = vis.state.get_winner()
+            p1_name = "HUMAN" if p1 == "HUMAN" else p1.__class__.__name__
+            p2_name = "HUMAN" if p2 == "HUMAN" else p2.__class__.__name__
+            auto_log_game("crazy", p1_name, p2_name, winner, getattr(vis, "elapsed_time", 0.0))
+    except Exception:
+        pass
 
 
 if __name__ == "__main__":

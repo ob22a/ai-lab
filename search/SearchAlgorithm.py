@@ -75,7 +75,13 @@ class SearchAlgorithm(ABC):
 
         end_time = time.time()
 
-        return self.get_result(runtime=end_time - start_time, metadata=metadata)
+        res = self.get_result(runtime=end_time - start_time, metadata=metadata)
+        try:
+            from utils.auto_logger import auto_log_result
+            auto_log_result(self, res)
+        except Exception:
+            pass
+        return res
 
     def reset(self):
         self.frontier = []

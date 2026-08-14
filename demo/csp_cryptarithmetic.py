@@ -59,6 +59,7 @@ def main():
     solution = solver.solve()
     dur = time.time() - t0
 
+
     if solver.status == "SUCCESS" and solution:
         print(f"\nSolution Found in {dur:.4f}s! (Nodes expanded: {solver.nodes_expanded})\n")
         print("Letter Assignment:")

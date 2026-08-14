@@ -20,7 +20,7 @@ class BackjumpingSolver(BacktrackingSolver):
         # To know which variable was "most recently assigned", we track the assignment sequence
         self.assignment_order: List[Any] = []
 
-    def solve(self) -> Dict[Any, Any]:
+    def _solve_impl(self) -> Dict[Any, Any]:
         self.reset()
         self.conflict_sets = {v: set() for v in self.problem.variables}
         self.assignment_order = []

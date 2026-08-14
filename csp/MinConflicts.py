@@ -17,7 +17,7 @@ class MinConflictsSolver(CSPSolver):
         self.on_assign = None
         self.on_unassign = None
 
-    def solve(self) -> Optional[Dict[Any, Any]]:
+    def _solve_impl(self) -> Optional[Dict[Any, Any]]:
         self.reset()
         
         # 1. Generate an initial complete random assignment

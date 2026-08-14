@@ -21,9 +21,21 @@ class CSPSolver(ABC):
         self.nodes_expanded = 0
         self.assignment = {}
 
-    @abstractmethod
     def solve(self) -> Dict[Any, Any]:
         """
         Runs the solver and returns the completed assignment, or None if no solution exists.
         """
+        import time
+        t0 = time.time()
+        assignment = self._solve_impl()
+        dur = time.time() - t0
+        try:
+            from utils.auto_logger import auto_log_csp
+            auto_log_csp(self, assignment, dur)
+        except Exception:
+            pass
+        return assignment
+
+    @abstractmethod
+    def _solve_impl(self) -> Dict[Any, Any]:
         pass

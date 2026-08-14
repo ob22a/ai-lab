@@ -107,7 +107,7 @@ class TreeCSPSolver(CSPSolver):
                 
         return True
 
-    def solve(self) -> Optional[Dict[Any, Any]]:
+    def _solve_impl(self) -> Optional[Dict[Any, Any]]:
         """
         Runs the tree-structured CSP solver.
         Returns consistent assignment dict or None on failure.

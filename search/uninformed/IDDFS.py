@@ -268,7 +268,12 @@ class OptimizedIDDFS(SearchAlgorithm):
 
     result.metadata=metadata
 
-    return result
+    try:
+            from utils.auto_logger import auto_log_result
+            auto_log_result(self, res)
+        except Exception:
+            pass
+        return result
   
   def reset(self):
     super().reset()

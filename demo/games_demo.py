@@ -88,6 +88,14 @@ def main():
         cell_size=cell_size
     )
     vis.run()
+    
+    try:
+        from utils.auto_logger import auto_log_game
+        if vis.state.is_terminal():
+            winner = vis.state.get_winner()
+            auto_log_game(args.game, p1_name, p2_name, winner, getattr(vis, "elapsed_time", 0.0))
+    except Exception:
+        pass
 
 
 if __name__ == "__main__":

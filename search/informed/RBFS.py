@@ -84,7 +84,12 @@ class RBFS(SearchAlgorithm):
             result, best.f_cost = self._rbfs(best, min(f_limit, alternative_f))
 
             if result is not None:
-                return result, 0.0
+                try:
+            from utils.auto_logger import auto_log_result
+            auto_log_result(self, res)
+        except Exception:
+            pass
+        return result, 0.0
 
     def _h(self, state) -> float:
         h = self._heuristic_cache.get(state)

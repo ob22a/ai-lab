@@ -80,7 +80,7 @@ class CycleCutsetSolver(CSPSolver):
         backtrack_cutset(0, {})
         return valid_assignments
 
-    def solve(self) -> Optional[Dict[Any, Any]]:
+    def _solve_impl(self) -> Optional[Dict[Any, Any]]:
         """
         Runs cutset conditioning. Returns completed assignment or None.
         """
