@@ -56,9 +56,14 @@ def main():
     print("\nReconstructed Variable Solution:")
     for var, color in sorted(solution.items()):
         print(f"  {var:4s}: {color}")
-    print("=" * 70)
+    if args.vis:
+        print("\nLaunching Interactive Pygame Tree Decomposition Visualizer...")
+        from visualization.TreeDecompositionVisualizer import TreeDecompositionVisualizer
+        vis = TreeDecompositionVisualizer(problem, solver)
+        vis.run()
 
 
 if __name__ == "__main__":
     main()
+
 

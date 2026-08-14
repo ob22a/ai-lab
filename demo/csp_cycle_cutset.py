@@ -60,7 +60,14 @@ def main():
     print(f"\nStandard Backtracking Nodes: {bt_solver.nodes_expanded}")
     print("=" * 70)
 
+    if args.vis:
+        print("\nLaunching Interactive Pygame Cycle Cutset Visualizer...")
+        from visualization.CycleCutsetVisualizer import CycleCutsetVisualizer
+        vis = CycleCutsetVisualizer(problem, cutset_solver)
+        vis.run()
+
 
 if __name__ == "__main__":
     main()
+
 
