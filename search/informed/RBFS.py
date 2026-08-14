@@ -85,11 +85,11 @@ class RBFS(SearchAlgorithm):
 
             if result is not None:
                 try:
-            from utils.auto_logger import auto_log_result
-            auto_log_result(self, res)
-        except Exception:
-            pass
-        return result, 0.0
+                    from utils.auto_logger import auto_log_result
+                    auto_log_result(self, result)
+                except Exception:
+                    pass
+                return result, 0.0
 
     def _h(self, state) -> float:
         h = self._heuristic_cache.get(state)

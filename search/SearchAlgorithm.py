@@ -52,8 +52,10 @@ class SearchAlgorithm(ABC):
             nodes_expanded=getattr(self, "nodes_expanded", 0),
             nodes_generated=getattr(self, "nodes_generated", 0),
             path_cost=(
-                self.solution_node.path_cost
-                if self.solution_node else 0
+                getattr(self, "best_value", 
+                getattr(self, "_best_value",
+                getattr(self, "current_value",
+                self.solution_node.path_cost if self.solution_node else 0)))
             ),
             solution_depth=(
                 self.solution_node.depth

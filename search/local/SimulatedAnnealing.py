@@ -42,7 +42,8 @@ class SimulatedAnnealing(SearchAlgorithm):
         T = self.schedule(self.num_iterations)
 
         if T <= 1e-10:
-            self.solution_node = self.current_node
+            best = getattr(self, 'best_state', self.current_state)
+            self.solution_node = Node(best, parent=None, action=None, path_cost=0)
             self.status = SearchStatus.SUCCESS
             return
 
@@ -67,15 +68,10 @@ class SimulatedAnnealing(SearchAlgorithm):
 
         self.current_node = Node(self.current_state, parent=None, action=None, path_cost=0)
 
-        # Adaptive early stopping when improvement is negligible
+        # Track the absolute best state found during the search
         if self._best_value is None or self.current_value > self._best_value + self.epsilon:
             self._best_value = self.current_value
-            self._stall_count = 0
-        else:
-            self._stall_count += 1
-            if self._stall_count >= self.patience:
-                self.solution_node = self.current_node
-                self.status = SearchStatus.SUCCESS
+            self.best_state = self.current_state
 
     @property
     def frontier_states(self):

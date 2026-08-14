@@ -17,39 +17,58 @@ def auto_log_result(solver, result):
 
         from benchmarks.benchmark import append_result_to_csv
         csv_path = None
-        label = f"{solver.__class__.__name__}"
+        
+        name_map = {
+            "GreedyBestFirstSearch": "GBFS",
+            "AStar": "A*",
+            "IDAStar": "IDA*",
+            "OptimizedIDDFS": "IDDFS",
+            "BidirectionalAStar": "Bidir-A*",
+            "BidirectionalSearch": "Bidir-Search",
+            "SMAStar": "SMA*(1000)",
+        }
+        raw_name = solver.__class__.__name__
+        label = name_map.get(raw_name, raw_name)
         
         if hasattr(solver, 'problem'):
             prob_name = type(solver.problem).__name__
             if 'TSP' in prob_name:
                 csv_path = "results/local_search_tsp.csv"
                 cities = len(getattr(solver.problem, 'cities', []))
-                label += f" / TSP {cities} (Demo)"
+                label += f" / TSP {cities}"
                 if result.solution:
                     result.path_cost = -solver.problem.value(result.solution.state)
             elif 'NQueens' in prob_name:
                 csv_path = "results/local_search_nqueens.csv"
                 n = getattr(solver.problem, 'n', 8)
-                label += f" / N-Queens {n} (Demo)"
+                label += f" / N-Queens {n}x{n}"
                 if result.solution:
                     result.path_cost = solver.problem.value(result.solution.state)
-            elif 'Maze' in prob_name:
-                csv_path = "results/search_maze.csv"
-                grid = getattr(solver.problem, 'grid', [])
-                w = len(grid[0]) if grid else 0
-                h = len(grid) if grid else 0
-                label += f" / Maze {w}x{h} (Demo)"
             elif 'NPuzzle' in prob_name:
-                n = getattr(solver.problem, 'n', 3)
-                if n == 3:
+                size = getattr(solver.problem.puzzle, 'size', 3)
+                if size == 3:
                     csv_path = "results/search_8puzzle.csv"
-                    label += f" / 8-puzzle (Demo)"
+                    label += " / 8-puzzle"
                 else:
                     csv_path = "results/search_15puzzle.csv"
-                    label += f" / 15-puzzle (Demo)"
+                    label += " / 15-puzzle"
+            elif 'Maze' in prob_name:
+                csv_path = "results/search_maze.csv"
+                rows = getattr(solver.problem.maze, 'rows', 10)
+                cols = getattr(solver.problem.maze, 'cols', 10)
+                label += f" / Maze {rows}x{cols}"
+            elif 'Romanian' in prob_name:
+                csv_path = "results/search_romania.csv"
+                label += " / Romania"
+            elif 'Sokoban' in prob_name:
+                csv_path = "results/search_sokoban.csv"
+                label += " / Sokoban"
+            elif 'Coloring' in prob_name or 'Sudoku' in prob_name or 'TreeDecomp' in prob_name or 'Cycle' in prob_name or 'Crypt' in prob_name:
+                csv_path = "results/csp_benchmarks.csv"
+                label += f" / {prob_name}"
             else:
-                csv_path = "results/other_search.csv"
-                label += f" / {prob_name} (Demo)"
+                csv_path = "results/other.csv"
+                label += f" / {prob_name}"
 
         if csv_path:
             append_result_to_csv(csv_path, label, 1, result)

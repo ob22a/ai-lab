@@ -54,11 +54,11 @@ class IGBFS(SearchAlgorithm):
         result = super().run(metadata)
         result.metadata["num_iterations"] = self.num_iterations
         try:
-            from utils.auto_logger import auto_log_result
-            auto_log_result(self, res)
-        except Exception:
-            pass
-        return result
+            from utils.auto_logger import auto_log_result
+            auto_log_result(self, result)
+        except Exception:
+            pass
+        return result
 
     def search_step(self):
         if self.status != SearchStatus.RUNNING:

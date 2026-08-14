@@ -1,4 +1,5 @@
 import heapq
+import itertools
 
 from core.node import Node
 from search.SearchAlgorithm import SearchAlgorithm,SearchStatus
@@ -9,27 +10,27 @@ class UCS(SearchAlgorithm):
     super().__init__(problem)
 
     self.problem=problem
-    self.frontier=[
-      Node(
+    self.counter = itertools.count()
+    start_node = Node(
         state=problem.start,
         parent=None,
         action=None,
         path_cost=0
-      )
-    ]
+    )
+    self.frontier=[(0, next(self.counter), start_node)]
     self.frontier_states={
       problem.start
     }
 
     self.explored = set()
-    self.current_node = self.frontier[0]
+    self.current_node = start_node
   
   def search_step(self):
     if not self.frontier:
       self.status=SearchStatus.FAILURE
       return None
 
-    node = heapq.heappop(self.frontier)
+    cost, count, node = heapq.heappop(self.frontier)
     self.current_node = node
     self.frontier_states.remove(
         node.state
@@ -60,7 +61,7 @@ class UCS(SearchAlgorithm):
               path_cost=node.path_cost + step_cost
           )
 
-          heapq.heappush(self.frontier,child)
+          heapq.heappush(self.frontier, (child.path_cost, next(self.counter), child))
           self.frontier_states.add(
               child_state
           )
@@ -75,15 +76,15 @@ class UCS(SearchAlgorithm):
     
   def reset(self):
       super().reset()
-      self.frontier=[
-          Node(
-              state=self.problem.start,
-              parent=None,
-              action=None,
-              path_cost=0
-          )
-      ]
-      self.current_node=self.frontier[0]
+      self.counter = itertools.count()
+      start_node = Node(
+          state=self.problem.start,
+          parent=None,
+          action=None,
+          path_cost=0
+      )
+      self.frontier=[(0, next(self.counter), start_node)]
+      self.current_node=start_node
       self.frontier_states={
           self.problem.start
       }
