@@ -83,25 +83,13 @@ def auto_log_game(game_name, p1_name, p2_name, winner, runtime):
     if any("benchmark" in arg for arg in sys.argv):
         return
     try:
-        from benchmarks.benchmark import append_result_to_csv, _timestamp
-        import csv
-        import os
-        
-        csv_path = "results/game_tournament.csv"
-        os.makedirs(os.path.dirname(csv_path) or ".", exist_ok=True)
-        write_header = not os.path.exists(csv_path) or os.path.getsize(csv_path) == 0
+        from benchmarks.benchmark import append_game_result_to_csv
         
         p1_wins = 1 if winner == 1 else 0
-        p2_wins = 1 if winner == -1 else 0
+        p2_wins = 1 if winner == -1 or winner == 2 else 0
         draws = 1 if winner == 0 else 0
         
-        row = [game_name, p1_name, p2_name, p1_wins, p2_wins, draws, round(runtime, 6)]
-        
-        with open(csv_path, "a", newline="") as f:
-            writer = csv.writer(f)
-            if write_header:
-                writer.writerow(["Game", "Agent 1", "Agent 2", "Agent 1 Wins", "Agent 2 Wins", "Draws", "Avg Game Time (s)"])
-            writer.writerow(row)
+        append_game_result_to_csv("results/game_tournament.csv", game_name, p1_name, p2_name, p1_wins, p2_wins, draws, runtime)
     except Exception as e:
         print(f"[Warning] Game Auto-logging failed: {e}")
 

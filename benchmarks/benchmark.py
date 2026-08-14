@@ -134,6 +134,16 @@ def append_result_to_csv(
             writer.writerow(RAW_COLUMNS)
         writer.writerow(row)
 
+def append_game_result_to_csv(csv_path: str, game_name: str, p1_name: str, p2_name: str, p1_wins: int, p2_wins: int, draws: int, avg_time: float, reset: bool = False) -> None:
+    os.makedirs(os.path.dirname(csv_path) or ".", exist_ok=True)
+    write_header = reset or not os.path.exists(csv_path) or os.path.getsize(csv_path) == 0
+    mode = "w" if reset else "a"
+    with open(csv_path, mode, newline="") as f:
+        writer = csv.writer(f)
+        if write_header:
+            writer.writerow(["Game", "Agent 1", "Agent 2", "Agent 1 Wins", "Agent 2 Wins", "Draws", "Avg Game Time (s)"])
+        writer.writerow([game_name, p1_name, p2_name, p1_wins, p2_wins, draws, round(avg_time, 6)])
+
 
 def aggregate_raw_rows(rows: List[List[str]]) -> List[BenchmarkResult]:
     """Aggregate per-run CSV rows into summary BenchmarkResult objects."""

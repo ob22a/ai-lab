@@ -108,42 +108,38 @@ def run_game_tournament(num_runs=30, target_games=None, agent_filter=None, reset
     if not matchups:
         matchups = _all_matchups()
 
+    from benchmarks.benchmark import append_game_result_to_csv
+
     csv_path = "results/game_tournament.csv"
-    os.makedirs("results", exist_ok=True)
-    write_header = reset or not os.path.exists(csv_path) or os.path.getsize(csv_path) == 0
-    mode = "w" if reset else "a"
+    first_write = reset
 
-    with open(csv_path, mode, newline="") as f:
-        writer = csv.writer(f)
-        if write_header:
-            writer.writerow(["Game", "Agent 1", "Agent 2", "Agent 1 Wins", "Agent 2 Wins", "Draws", "Avg Game Time (s)"])
+    for key, game_name, state_factory, agents in matchups:
+        if agent_filter:
+            filt = {a.strip().lower() for a in agent_filter}
+            agents = [(n, ag) for n, ag in agents if any(x in n.lower() for x in filt)]
+        if len(agents) < 2:
+            continue
 
-        for key, game_name, state_factory, agents in matchups:
-            if agent_filter:
-                filt = {a.strip().lower() for a in agent_filter}
-                agents = [(n, ag) for n, ag in agents if any(x in n.lower() for x in filt)]
-            if len(agents) < 2:
-                continue
-
-            print(f"\n--- Tournament: {game_name} ---")
-            for i in range(len(agents)):
-                for j in range(i + 1, len(agents)):
-                    name1, a1 = agents[i]
-                    name2, a2 = agents[j]
-                    p1_wins = p2_wins = draws = 0
-                    t0 = time.perf_counter()
-                    for _ in range(num_runs):
-                        winner = play_game(state_factory(), a1, a2)
-                        if winner == 1:
-                            p1_wins += 1
-                        elif winner == 2:
-                            p2_wins += 1
-                        else:
-                            draws += 1
-                    elapsed = time.perf_counter() - t0
-                    avg_time = elapsed / num_runs
-                    print(f"  {name1:<20} vs {name2:<20} | W1:{p1_wins:2d} W2:{p2_wins:2d} D:{draws:2d} | {avg_time:.3f}s")
-                    writer.writerow([game_name, name1, name2, p1_wins, p2_wins, draws, round(avg_time, 4)])
+        print(f"\n--- Tournament: {game_name} ---")
+        for i in range(len(agents)):
+            for j in range(i + 1, len(agents)):
+                name1, a1 = agents[i]
+                name2, a2 = agents[j]
+                p1_wins = p2_wins = draws = 0
+                t0 = time.perf_counter()
+                for _ in range(num_runs):
+                    winner = play_game(state_factory(), a1, a2)
+                    if winner == 1:
+                        p1_wins += 1
+                    elif winner == 2 or winner == -1:
+                        p2_wins += 1
+                    else:
+                        draws += 1
+                elapsed = time.perf_counter() - t0
+                avg_time = elapsed / num_runs
+                print(f"  {name1:<20} vs {name2:<20} | W1:{p1_wins:2d} W2:{p2_wins:2d} D:{draws:2d} | {avg_time:.3f}s")
+                append_game_result_to_csv(csv_path, game_name, name1, name2, p1_wins, p2_wins, draws, avg_time, reset=first_write)
+                first_write = False
 
     print(f"\nSaved Game Tournament Results -> {csv_path}")
 
