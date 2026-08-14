@@ -148,14 +148,18 @@ def generate_all_reports():
     sections.append(aggregate_search_csv("results/search_15puzzle.csv"))
     if os.path.exists("reports/figures/puzzles_15_comparison.png"):
         sections.append("\n![15-Puzzle Performance](figures/puzzles_15_comparison.png)\n")
+    if os.path.exists("reports/figures/15puzzle_all_instances.png"):
+        sections.append("\n![15-Puzzle Multi-Difficulty](figures/15puzzle_all_instances.png)\n")
 
     # Maze
     sections.append("\n---\n\n## 2. Maze Pathfinding\n")
     sections.append(aggregate_search_csv("results/search_maze.csv"))
     if os.path.exists("reports/figures/maze_all_algos_comparison.png"):
         sections.append("\n![Maze Algorithms](figures/maze_all_algos_comparison.png)\n")
-    if os.path.exists("reports/figures/maze_scaling_comparison.png"):
-        sections.append("\n![Maze Scaling](figures/maze_scaling_comparison.png)\n")
+    if os.path.exists("reports/figures/maze_scaling_uninformed.png"):
+        sections.append("\n![Maze Scaling (Uninformed)](figures/maze_scaling_uninformed.png)\n")
+    if os.path.exists("reports/figures/maze_scaling_informed.png"):
+        sections.append("\n![Maze Scaling (Informed)](figures/maze_scaling_informed.png)\n")
 
     # Local Search - TSP
     sections.append("\n---\n\n## 3. Local Search & Optimization\n")
@@ -186,8 +190,13 @@ def generate_all_reports():
     if os.path.exists("reports/figures/game_tournament_winrates.png"):
         sections.append("\n![Game Tournament](figures/game_tournament_winrates.png)\n")
 
+    # Online Search
+    sections.append("\n---\n\n## 6. Online Search (LRTA*)\n")
+    if os.path.exists("reports/figures/online_search_learning_curve.png"):
+        sections.append("\n![LRTA* Learning Curve](figures/online_search_learning_curve.png)\n")
+
     # Heuristic Comparison
-    sections.append("\n---\n\n## 6. Heuristic Comparison\n")
+    sections.append("\n---\n\n## 7. Heuristic Comparison\n")
     sections.append("### A* and IDA* on 8-Puzzle (Misplaced vs Manhattan vs Pattern Database)\n")
     if os.path.exists("reports/figures/heuristic_comparison_8puzzle.png"):
         sections.append("\n![Heuristic Comparison](figures/heuristic_comparison_8puzzle.png)\n")
