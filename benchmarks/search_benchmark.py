@@ -2,22 +2,22 @@
 benchmarks/search_benchmark.py
 
 Runs all search algorithms across:
-  - 3 random 8-puzzle instances  (easy / medium / hard)
-  - 2 random 15-puzzle instances (informed algorithms only)
-  - 3 mazes (10x10, 30x30, 50x50)
+  - 8-Puzzle instances (easy / medium / hard)
+  - 15-Puzzle instances (informed algorithms)
+  - Mazes (10x10, 30x30, 50x50)
 
-Results printed and saved to results/search_benchmark.csv.
-
-Timeout: 30s per entry via subprocess — guaranteed kill on Windows.
+Outputs saved to separate CSV files:
+  - results/search_8puzzle.csv
+  - results/search_15puzzle.csv
+  - results/search_maze.csv
 """
 
+import argparse
 import copy
 import csv
 import os
-import subprocess
 import sys
 import time
-import json
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
@@ -46,10 +46,26 @@ from search.informed.BidirectionalAStar import BidirectionalAStar
 
 TIMEOUT_S = 30
 
+UNINFORMED = [
+    ("DFS",           DFS,                 {}),
+    ("BFS",           BFS,                 {}),
+    ("UCS",           UCS,                 {}),
+    ("IDDFS",         IDDFS,               {"visualize": False}),
+    ("Bidir-Search",  BidirectionalSearch, {}),
+]
 
-# --------------------------------------------------------------------------- #
-# Problem factories
-# --------------------------------------------------------------------------- #
+INFORMED = [
+    ("GBFS",          GreedyBestFirstSearch, {}),
+    ("A*",            AStar,               {}),
+    ("IDA*",          IDAStar,             {}),
+    ("RBFS",          RBFS,                {}),
+    ("SMA*(1000)",    SMAStar,             {"memory_limit": 1000}),
+    ("Bidir-A*",      BidirectionalAStar,  {}),
+]
+
+INFORMED_WITH_IGBFS = INFORMED + [("IGBFS", IGBFS, {})]
+ALL_ALGOS = UNINFORMED + INFORMED_WITH_IGBFS
+
 
 def make_8puzzle(generator, moves, pdb_8):
     state = generator.generate(moves=moves)
@@ -66,114 +82,27 @@ def make_maze(rows, cols):
     return MazeSearchProblem(maze, (0, 0), (rows - 1, cols - 1))
 
 
-# --------------------------------------------------------------------------- #
-# Algorithm roster
-# --------------------------------------------------------------------------- #
-
-UNINFORMED = [
-    ("DFS",           DFS,                 {}),
-    ("BFS",           BFS,                 {}),
-    ("UCS",           UCS,                 {}),
-    ("IDDFS",         IDDFS,               {"visualize": False}),
-    ("Bidir-Search",  BidirectionalSearch, {}),
-]
-
-# IGBFS excluded from 15-puzzle: it's inadmissible and can produce astronomically
-# long paths, making it hang even longer than uninformed algorithms.
-INFORMED = [
-    ("GBFS",          GreedyBestFirstSearch, {}),
-    ("A*",            AStar,               {}),
-    ("IDA*",          IDAStar,             {}),
-    ("RBFS",          RBFS,                {}),
-    ("SMA*(1000)",    SMAStar,             {"memory_limit": 1000}),
-    ("Bidir-A*",      BidirectionalAStar,  {}),
-]
-
-INFORMED_WITH_IGBFS = INFORMED + [("IGBFS", IGBFS, {})]
-
-ALL_ALGOS = UNINFORMED + INFORMED_WITH_IGBFS
+def run_benchmark_for_group(entries, num_runs=30):
+    runner = Benchmark(entries)
+    return runner.run(num_runs=num_runs, verbose=False)
 
 
-# --------------------------------------------------------------------------- #
-# Benchmark runner
-# --------------------------------------------------------------------------- #
-
-def run_entry(algo_class, problem, algo_kwargs, label):
-    """Run one algorithm on one problem with a thread-based timeout."""
-    import threading
-    result_box = [None]
-    err_box = [None]
-
-    def target():
-        try:
-            algo = algo_class(problem, **algo_kwargs)
-            result_box[0] = algo.run()
-        except Exception as e:
-            err_box[0] = str(e)
-
-    t = threading.Thread(target=target, daemon=True)
-    t0 = time.perf_counter()
-    t.start()
-    t.join(timeout=TIMEOUT_S)
-    elapsed = time.perf_counter() - t0
-
-    if t.is_alive():
-        return BenchmarkResult(
-            label=label, success=False, path_cost=0,
-            nodes_expanded=0, nodes_generated=0,
-            runtime=elapsed, max_frontier_size=0,
-        ), "TIMEOUT"
-
-    if err_box[0]:
-        return BenchmarkResult(
-            label=label, success=False, path_cost=0,
-            nodes_expanded=0, nodes_generated=0,
-            runtime=elapsed, max_frontier_size=0,
-        ), err_box[0]
-
-    r = result_box[0]
-    return BenchmarkResult(
-        label=label,
-        success=r.success,
-        path_cost=r.path_cost,
-        nodes_expanded=r.nodes_expanded,
-        nodes_generated=r.nodes_generated,
-        runtime=r.runtime,
-        max_frontier_size=r.max_frontier_size,
-    ), None
-
-
-def run_group(group_label, problem_fn, algos, results):
-    base = problem_fn()
-    print(f"\n  [{group_label}]")
-    for name, cls, kwargs in algos:
-        label = f"{name} / {group_label}"
-        p = copy.deepcopy(base)
-        br, err = run_entry(cls, p, kwargs, label)
-        status = "TIMEOUT" if err == "TIMEOUT" else ("OK" if br.success else f"FAIL({err or 'no solution'})")
-        print(f"    {name:<18} {status:<20} cost={br.path_cost:<8.0f} exp={br.nodes_expanded:<8} {br.runtime:.4f}s")
-        results.append(br)
-
-
-def save_csv(results, path):
-    os.makedirs(os.path.dirname(path), exist_ok=True) if os.path.dirname(path) else None
-    with open(path, "w", newline="") as f:
+def save_domain_csv(results, csv_path):
+    os.makedirs(os.path.dirname(csv_path), exist_ok=True)
+    with open(csv_path, "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(_COLUMNS)
         for r in results:
             writer.writerow([
                 r.label, r.success, r.path_cost,
                 r.nodes_expanded, r.nodes_generated,
-                round(r.runtime, 6), r.max_frontier_size,
+                round(r.runtime, 6), round(r.runtime_std, 6),
+                r.max_frontier_size, r.runs_count
             ])
-    print(f"\nSaved -> {path}")
+    print(f"Saved domain benchmark -> {csv_path}")
 
 
-# --------------------------------------------------------------------------- #
-# Main
-# --------------------------------------------------------------------------- #
-
-def main():
+def main(num_runs=30,domains=['8pzl','15pzl','maze']):
     import random
     random.seed(2026)
 
@@ -191,23 +120,44 @@ def main():
     gen_8  = NPuzzleGenerator(3)
     gen_15 = NPuzzleGenerator(4)
 
-    results: list[BenchmarkResult] = []
+    if '8pzl' in domains:
+        # 1. 8-Puzzle Domain
+        print(f"\n=== Running 8-Puzzle Benchmark ({num_runs} runs) ===")
+        p8_entries = []
+        for diff_label, moves in [("8pzl easy", 8), ("8pzl medium", 18), ("8pzl hard", 28)]:
+            base_prob = make_8puzzle(gen_8, moves, pdb_8)
+            for name, cls, kwargs in ALL_ALGOS:
+                p8_entries.append(BenchmarkEntry(label=f"{name} / {diff_label}", algo_class=cls, problem=base_prob, algo_kwargs=kwargs))
+        p8_res = run_benchmark_for_group(p8_entries, num_runs=num_runs)
+        save_domain_csv(p8_res, "results/search_8puzzle.csv")
 
-    print("\n=== 8-Puzzle Benchmark ===")
-    for diff_label, moves in [("8pzl easy", 8), ("8pzl medium", 18), ("8pzl hard", 28)]:
-        run_group(diff_label, lambda m=moves: make_8puzzle(gen_8, m, pdb_8), ALL_ALGOS, results)
+    if '15pzl' in domains:
+        # 2. 15-Puzzle Domain
+        print(f"\n=== Running 15-Puzzle Benchmark ({num_runs} runs) ===")
+        p15_entries = []
+        for diff_label, moves in [("15pzl medium", 25), ("15pzl hard", 45), ("15pzl complex", 90)]:
+            base_prob = make_15puzzle(gen_15, moves, pdb_15)
+            for name, cls, kwargs in INFORMED:
+                p15_entries.append(BenchmarkEntry(label=f"{name} / {diff_label}", algo_class=cls, problem=base_prob, algo_kwargs=kwargs))
+        p15_res = run_benchmark_for_group(p15_entries, num_runs=num_runs)
+        save_domain_csv(p15_res, "results/search_15puzzle.csv")
 
-    print("\n=== 15-Puzzle Benchmark (informed only) ===")
-    for diff_label, moves in [("15pzl medium", 25), ("15pzl hard", 45)]:
-        run_group(diff_label, lambda m=moves: make_15puzzle(gen_15, m, pdb_15), INFORMED, results)
-
-    print("\n=== Maze Benchmark ===")
-    for rows, cols in [(10, 10), (30, 30), (50, 50)]:
-        run_group(f"maze {rows}x{cols}", lambda r=rows, c=cols: make_maze(r, c), ALL_ALGOS, results)
-
-    save_csv(results, "results/search_benchmark.csv")
-    print(f"\nTotal entries: {len(results)}")
+    if 'maze' in domains:
+        # 3. Maze Domain
+        print(f"\n=== Running Maze Benchmark ({num_runs} runs) ===")
+        maze_entries = []
+        for rows, cols in [(10, 10), (30, 30), (50, 50)]:
+            base_prob = make_maze(rows, cols)
+            for name, cls, kwargs in ALL_ALGOS:
+                maze_entries.append(BenchmarkEntry(label=f"{name} / maze {rows}x{cols}", algo_class=cls, problem=base_prob, algo_kwargs=kwargs))
+        maze_res = run_benchmark_for_group(maze_entries, num_runs=num_runs)
+        save_domain_csv(maze_res, "results/search_maze.csv")
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--runs", type=int, default=30, help="Number of runs per algorithm (default: 30)")
+    parser.add_argument("--domains", type=str, default="8pzl,15pzl,maze", help="Comma-separated domains to run (8pzl,15pzl,maze)")
+    args = parser.parse_args()
+    domain_list = [d.strip() for d in args.domains.split(",") if d.strip()]
+    main(num_runs=args.runs, domains=domain_list)

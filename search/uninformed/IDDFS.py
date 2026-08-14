@@ -125,7 +125,6 @@ class TrueIDDFS():
       if self.status==SearchStatus.DEPTH_EXCEEDED:
         if self.visualize:
           print("Depth Limit Reached Doubling ...")
-          time.sleep(1)
         
         self.cur_depth*=self.rate
         self.num_iterations+=1
@@ -204,8 +203,7 @@ class OptimizedIDDFS(SearchAlgorithm):
     
     if not self.frontier:
       if self.visualize:
-        print(f"Doubling the depth limit. This will cause sleep for 1 second to make it more clear in the visualization. Depth before doubling {self.max_height}")
-        time.sleep(1)
+        print(f"Doubling the depth limit. Depth before doubling {self.max_height}")
 
       self.height_updates+=1
       self.frontier=self.cutoff_nodes[::-1]

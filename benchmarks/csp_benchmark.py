@@ -1,5 +1,30 @@
+"""
+benchmarks/csp_benchmark.py
+
+Runs Constraint Satisfaction Problem (CSP) benchmarks across:
+  - Map Coloring (Australia 3-coloring)
+  - 8-Queens CSP
+  - Sudoku Easy
+  - Sudoku Hard
+
+Solvers:
+  - BT (Naive Backtracking)
+  - BT + MRV
+  - BT + Forward Checking
+  - BT + MAC
+  - Min-Conflicts
+
+Output saved to results/csp_benchmarks.csv
+"""
+
+import argparse
+import csv
+import math
+import os
+import sys
 import time
-from typing import Callable, Any
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from csp.Backtracking import BacktrackingSolver, unassigned_variable_default, order_domain_values_default, inference_default
 from csp.heuristics.MRV import mrv
@@ -11,95 +36,93 @@ from domains.map_coloring.MapColoring import MapColoringCSP
 from domains.n_queens.NQueensCSP import NQueensCSP
 from domains.sudoku.Sudoku import SudokuCSP, SUDOKU_EASY, SUDOKU_HARD
 
-def run_backtracking(problem_generator: Callable, name: str, var_heuristic: Callable, inference: Callable) -> str:
-    problem = problem_generator()
-    solver = BacktrackingSolver(
-        problem,
-        select_unassigned_variable=var_heuristic,
-        order_domain_values=order_domain_values_default,
-        inference=inference
-    )
-    start = time.time()
-    solver.solve()
-    duration = time.time() - start
-    
-    if solver.status == "SUCCESS":
-        return f"{solver.nodes_expanded} nodes ({duration:.4f}s)"
-    else:
-        # Some simple heuristics might time out or hit recursion limits on Hard Sudoku
-        return f"FAILED/TIMEOUT ({duration:.4f}s)"
 
-def run_min_conflicts(problem_generator: Callable, max_steps: int = 10000) -> str:
-    problem = problem_generator()
-    solver = MinConflictsSolver(problem, max_steps=max_steps)
-    start = time.time()
-    solver.solve()
-    duration = time.time() - start
-    
-    if solver.status == "SUCCESS":
-        return f"{solver.nodes_expanded} steps ({duration:.4f}s)"
-    else:
-        return f"FAILED ({duration:.4f}s)"
+def evaluate_csp_run(solver_factory, num_runs=30):
+    runtimes = []
+    last_nodes = 0
+    success = False
 
-def format_row(problem_name: str, bt: str, bt_mrv: str, bt_fc: str, bt_mac: str, min_conflicts: str) -> str:
-    return f"| {problem_name:12} | {bt:20} | {bt_mrv:20} | {bt_fc:20} | {bt_mac:20} | {min_conflicts:20} |"
+    for r in range(num_runs):
+        solver = solver_factory()
+        t0 = time.perf_counter()
+        res = solver.solve()
+        elapsed = time.perf_counter() - t0
 
-def main():
-    print("Running CSP Benchmarks...\n")
-    print("| Problem      | BT                   | BT+MRV               | BT+FC                | BT+MAC               | Min-Conflicts        |")
-    print("|--------------|----------------------|----------------------|----------------------|----------------------|----------------------|")
-    
+        if solver.status == "SUCCESS":
+            success = True
+            runtimes.append(elapsed)
+            last_nodes = solver.nodes_expanded
+
+    if not runtimes:
+        return "HANGS/FAILED", 0.0, 0, False
+
+    mean_rt = sum(runtimes) / len(runtimes)
+    return f"{last_nodes} nodes ({mean_rt:.4f}s)", mean_rt, last_nodes, success
+
+
+def main(num_runs=30):
+    print(f"\nRunning CSP Benchmarks ({num_runs} runs per solver)...")
+
+    results_rows = []
+    headers = ["Problem", "BT (Naive)", "BT+MRV", "BT+FC", "BT+MAC", "Min-Conflicts"]
+
     # 1. Map Coloring
-    def map_coloring(): return MapColoringCSP()
-    row1 = format_row(
-        "Map Coloring",
-        run_backtracking(map_coloring, "BT", unassigned_variable_default, inference_default),
-        run_backtracking(map_coloring, "BT+MRV", mrv, inference_default),
-        run_backtracking(map_coloring, "BT+FC", unassigned_variable_default, forward_checking),
-        run_backtracking(map_coloring, "BT+MAC", unassigned_variable_default, mac),
-        run_min_conflicts(map_coloring)
-    )
-    print(row1)
-    
+    print("  Evaluating Map Coloring...")
+    mc_bt = evaluate_csp_run(lambda: BacktrackingSolver(MapColoringCSP()), num_runs)[0]
+    mc_mrv = evaluate_csp_run(lambda: BacktrackingSolver(MapColoringCSP(), select_unassigned_variable=mrv), num_runs)[0]
+    mc_fc = evaluate_csp_run(lambda: BacktrackingSolver(MapColoringCSP(), inference=forward_checking), num_runs)[0]
+    mc_mac = evaluate_csp_run(lambda: BacktrackingSolver(MapColoringCSP(), inference=mac), num_runs)[0]
+    mc_mc = evaluate_csp_run(lambda: MinConflictsSolver(MapColoringCSP()), num_runs)[0]
+    results_rows.append(["Map Coloring", mc_bt, mc_mrv, mc_fc, mc_mac, mc_mc])
+
     # 2. 8-Queens
-    def eight_queens(): return NQueensCSP(8)
-    row2 = format_row(
-        "8-Queens",
-        run_backtracking(eight_queens, "BT", unassigned_variable_default, inference_default),
-        run_backtracking(eight_queens, "BT+MRV", mrv, inference_default),
-        run_backtracking(eight_queens, "BT+FC", unassigned_variable_default, forward_checking),
-        run_backtracking(eight_queens, "BT+MAC", unassigned_variable_default, mac),
-        run_min_conflicts(eight_queens)
-    )
-    print(row2)
-    
+    print("  Evaluating 8-Queens CSP...")
+    nq_bt = evaluate_csp_run(lambda: BacktrackingSolver(NQueensCSP(8)), num_runs)[0]
+    nq_mrv = evaluate_csp_run(lambda: BacktrackingSolver(NQueensCSP(8), select_unassigned_variable=mrv), num_runs)[0]
+    nq_fc = evaluate_csp_run(lambda: BacktrackingSolver(NQueensCSP(8), inference=forward_checking), num_runs)[0]
+    nq_mac = evaluate_csp_run(lambda: BacktrackingSolver(NQueensCSP(8), inference=mac), num_runs)[0]
+    nq_mc = evaluate_csp_run(lambda: MinConflictsSolver(NQueensCSP(8)), num_runs)[0]
+    results_rows.append(["8-Queens", nq_bt, nq_mrv, nq_fc, nq_mac, nq_mc])
+
     # 3. Sudoku Easy
-    def sudoku_easy(): return SudokuCSP(SUDOKU_EASY)
-    row3 = format_row(
-        "Sudoku Easy",
-        # Standard backtracking without any heuristics/inference will hang forever on Sudoku!
-        # We cap it or just skip it. Let's skip pure BT for Sudoku.
-        "HANGS FOREVER",
-        run_backtracking(sudoku_easy, "BT+MRV", mrv, inference_default),
-        run_backtracking(sudoku_easy, "BT+FC", unassigned_variable_default, forward_checking),
-        run_backtracking(sudoku_easy, "BT+MAC", unassigned_variable_default, mac),
-        "N/A (Too dense)"
-    )
-    print(row3)
-    
+    print("  Evaluating Sudoku Easy...")
+    se_bt = "HANGS FOREVER"
+    se_mrv = evaluate_csp_run(lambda: BacktrackingSolver(SudokuCSP(SUDOKU_EASY), select_unassigned_variable=mrv), num_runs)[0]
+    se_fc = evaluate_csp_run(lambda: BacktrackingSolver(SudokuCSP(SUDOKU_EASY), inference=forward_checking), num_runs)[0]
+    se_mac = evaluate_csp_run(lambda: BacktrackingSolver(SudokuCSP(SUDOKU_EASY), inference=mac), num_runs)[0]
+    se_mc = "N/A (Too dense)"
+    results_rows.append(["Sudoku Easy", se_bt, se_mrv, se_fc, se_mac, se_mc])
+
     # 4. Sudoku Hard
-    def sudoku_hard(): return SudokuCSP(SUDOKU_HARD)
-    row4 = format_row(
-        "Sudoku Hard",
-        "HANGS FOREVER",
-        "HANGS FOREVER",
-        run_backtracking(sudoku_hard, "BT+FC", mrv, forward_checking), # Using MRV for FC to give it a chance
-        run_backtracking(sudoku_hard, "BT+MAC", mrv, mac),
-        "N/A (Too dense)"
-    )
-    print(row4)
-    
-    print("\nBenchmark Complete!")
+    print("  Evaluating Sudoku Hard...")
+    sh_bt = "HANGS FOREVER"
+    sh_mrv = "HANGS FOREVER"
+    sh_fc = evaluate_csp_run(lambda: BacktrackingSolver(SudokuCSP(SUDOKU_HARD), select_unassigned_variable=mrv, inference=forward_checking), num_runs)[0]
+    sh_mac = evaluate_csp_run(lambda: BacktrackingSolver(SudokuCSP(SUDOKU_HARD), select_unassigned_variable=mrv, inference=mac), num_runs)[0]
+    sh_mc = "N/A (Too dense)"
+    results_rows.append(["Sudoku Hard", sh_bt, sh_mrv, sh_fc, sh_mac, sh_mc])
+
+    # Print Table
+    print("\n" + "=" * 90)
+    print(f"| {headers[0]:14} | {headers[1]:15} | {headers[2]:15} | {headers[3]:15} | {headers[4]:15} | {headers[5]:15} |")
+    print("=" * 90)
+    for row in results_rows:
+        print(f"| {row[0]:14} | {row[1]:15} | {row[2]:15} | {row[3]:15} | {row[4]:15} | {row[5]:15} |")
+    print("=" * 90)
+
+    # Save to CSV
+    csv_path = "results/csp_benchmarks.csv"
+    os.makedirs("results", exist_ok=True)
+    with open(csv_path, "w", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow(headers)
+        writer.writerows(results_rows)
+
+    print(f"\nSaved CSP Benchmark Results -> {csv_path}")
+
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--runs", type=int, default=30, help="Number of runs per solver (default: 30)")
+    args = parser.parse_args()
+    main(num_runs=args.runs)

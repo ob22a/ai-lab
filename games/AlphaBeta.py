@@ -6,8 +6,11 @@ class AlphaBetaSolver(GameSolver):
     """
     Alpha-Beta Pruning Algorithm.
     Guarantees the exact same result as Minimax, but prunes branches that 
-    cannot possibly affect the final decision.
+    cannot possibly affect the final decision. Supports optional max_depth limit.
     """
+    def __init__(self, max_depth: int = -1):
+        super().__init__()
+        self.max_depth = max_depth
     
     def get_best_action(self, state: GameState) -> Any:
         self.nodes_expanded = 0
@@ -20,7 +23,7 @@ class AlphaBetaSolver(GameSolver):
         
         for action in state.get_legal_actions():
             child_state = state.apply_action(action)
-            value = self._min_value(child_state, alpha, beta)
+            value = self._min_value(child_state, alpha, beta, depth=1)
             
             if value > best_value:
                 best_value = value
@@ -30,42 +33,40 @@ class AlphaBetaSolver(GameSolver):
             
         return best_action
         
-    def _max_value(self, state: GameState, alpha: float, beta: float) -> float:
+    def _max_value(self, state: GameState, alpha: float, beta: float, depth: int = 0) -> float:
         self.nodes_expanded += 1
         
         if state.is_terminal():
+            return state.get_utility(self.root_player)
+        if self.max_depth > 0 and depth >= self.max_depth:
             return state.get_utility(self.root_player)
             
         value = float('-inf')
         for action in state.get_legal_actions():
             child_state = state.apply_action(action)
-            value = max(value, self._min_value(child_state, alpha, beta))
+            value = max(value, self._min_value(child_state, alpha, beta, depth + 1))
             
             if value >= beta:
-                # Beta Cutoff
-                # The MIN player above us already has a guaranteed path that is better (lower)
-                # than this value. They will never let us get here.
                 return value
                 
             alpha = max(alpha, value)
             
         return value
         
-    def _min_value(self, state: GameState, alpha: float, beta: float) -> float:
+    def _min_value(self, state: GameState, alpha: float, beta: float, depth: int = 0) -> float:
         self.nodes_expanded += 1
         
         if state.is_terminal():
+            return state.get_utility(self.root_player)
+        if self.max_depth > 0 and depth >= self.max_depth:
             return state.get_utility(self.root_player)
             
         value = float('inf')
         for action in state.get_legal_actions():
             child_state = state.apply_action(action)
-            value = min(value, self._max_value(child_state, alpha, beta))
+            value = min(value, self._max_value(child_state, alpha, beta, depth + 1))
             
             if value <= alpha:
-                # Alpha Cutoff
-                # The MAX player above us already has a guaranteed path that is better (higher)
-                # than this value. They will never let us get here.
                 return value
                 
             beta = min(beta, value)

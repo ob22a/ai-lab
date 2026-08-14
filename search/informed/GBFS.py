@@ -48,7 +48,7 @@ class GreedyBestFirstSearch(SearchAlgorithm):
       child_state = self.problem.get_result(node.state,action)
       
       if child_state not in self.explored and child_state not in self.frontier_states:
-        step_cost = self.problem.get_cost(node,action,child_state)
+        step_cost = self.problem.get_cost(node.state, action, child_state)
 
         child = Node(
           state=child_state,

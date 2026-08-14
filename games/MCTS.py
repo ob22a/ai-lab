@@ -62,7 +62,7 @@ class MCTSSolver(GameSolver):
                 
             # 4. BACKPROPAGATION
             # Normalize utility between 0 and 1 for MCTS wins metric
-            # For our framework, Win=+1000, Loss=-1000, Draw=0
+            # For our Lab, Win=+1000, Loss=-1000, Draw=0
             # For Crazy heuristic, score can be anything, but let's say > 0 is good.
             raw_utility = current_state.get_utility(self.root_player)
             if raw_utility > 0:

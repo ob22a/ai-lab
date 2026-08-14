@@ -1,12 +1,69 @@
-# 🚀 Advanced Agentic AI Framework
+# 🚀 Advanced Agentic AI Lab
 
-A state-of-the-art, highly modular Object-Oriented AI library implemented from scratch in Python. This framework provides unified abstractions, pluggable solver engines, automated benchmarking pipelines, and interactive Pygame visualizers for a vast array of artificial intelligence paradigms.
+A state-of-the-art, highly modular Object-Oriented AI library implemented from scratch in Python. This Lab provides unified abstractions, pluggable solver engines, automated 30-run benchmarking pipelines, performance chart generators, and an interactive Pygame Launcher Hub for a vast array of artificial intelligence paradigms.
+
+---
+
+## 🎮 Unified Interactive Launcher Hub (`main.py`)
+
+Launch the unified resizable Pygame GUI to browse, configure, and play across all **17 supported AI domains**:
+
+```bash
+python main.py
+```
+
+### Features of the Launcher Hub:
+* **Category Tabs**: Seamlessly switch between **Search**, **Optimization**, **CSP**, and **Adversarial Games**.
+* **Algorithm Selector**: Pick any algorithm dynamically (A*, BFS, DFS, UCS, IDA*, Hill Climbing, Simulated Annealing, Genetic Algorithm, Backtracking + MRV/MAC, Minimax, AlphaBeta, MCTS).
+* **Game Modes**: Human vs AI, AI vs AI, Human vs Human.
+* **Parameter Tuning**: Adjust search depth, MCTS simulations, or grid sizes on the fly.
+* **Dynamic Window Resizing**: Full `pygame.RESIZABLE` support across all visualizers.
+
+---
+
+## 📸 Visualizer & Algorithm Screenshots
+
+| Maze Pathfinding (A* & IDA*) | Sokoban Box Pushing Search |
+|---|---|
+| ![IDAStar Maze](screenshots/IDAStar_maze.png) | ![Sokoban Search](screenshots/sokoban.png) |
+
+| N-Queens Local Optimization (Simulated Annealing) | N-Puzzle Sliding Tile Search |
+|---|---|
+| ![Simulated Annealing N-Queens](screenshots/simulated_annealing_n-queens.png) | ![N-Puzzle Search](screenshots/npuzzle%20search.png) |
+
+---
+
+## 🛠️ Educational Modules, Demos & Experimentation Folders
+
+This Lab is built for hands-on learning, experimentation, and research. Different entry points allow you to explore algorithms in isolation without removing or altering core solver logic:
+
+- **`demo/` Directory (Standalone Executable Demos)**:
+  Contains ready-to-run educational scripts demonstrating individual algorithms step-by-step:
+  - `demo/nqueens_demo.py` & `demo/genetic_algorithm_nqueens.py` (Local search & GA on N-Queens)
+  - `demo/beam_search_nqueens.py` (Local Beam Search with k=5)
+  - `demo/sokoban_demo.py` (Procedurally generated Sokoban solver with A*)
+  - `demo/crazy_demo.py` (Crazy Card Game self-play simulation with Obssa's Heuristic)
+  - `demo/pattern_database_demo.py` (Disjoint Pattern Database precomputation for 8/15 puzzle)
+
+- **`visualization/` Directory (Pygame Graphical Visualizers)**:
+  Dedicated visualizer modules for step-by-step graphical rendering:
+  - `MazeVisualizer.py`, `NPuzzleVisualizer.py`, `RomanianMapVisualizer.py`, `WordLadderVisualizer.py`
+  - `TSPVisualizer.py`, `NQueensVisualizer.py`, `SudokuVisualizer.py`, `MapColoringVisualizer.py`
+  - `BoardGameVisualizer.py` (Tic-Tac-Toe, Connect Four, Checkers, Othello) & `CrazyVisualizer.py` (Crazy Card Game)
+
+- **`benchmarks/` Directory (Domain Benchmark Suite & Reporting)**:
+  Modular benchmark runners to execute custom 30-run performance evaluations and save CSV files:
+  - `search_benchmark.py` (8-Puzzle, 15-Puzzle, and Maze 10x10/30x30/50x50 pathfinding)
+  - `local_search_benchmark.py` (TSP 20-City and 8-Queens local search & Genetic Algorithm)
+  - `csp_benchmark.py` (Map Coloring, 8-Queens, Sudoku Easy/Hard solvers)
+  - `game_benchmark.py` (Tic-Tac-Toe, Connect Four, and Crazy Card Game tournaments)
+  - `generate_report.py` (Generates Matplotlib performance charts directly from CSV data)
 
 ---
 
 ## 🏗 Architecture & Design System
 
-The core design philosophy of this framework revolves around clean **separation of concerns** between **Domains (State Representations)** and **Solvers (Algorithms)**. All problems inherit from generic abstract base classes, allowing any solver to be plugged into any matching domain.
+The core design philosophy of this Lab revolves around clean **separation of concerns** between **Domains (State Representations)** and **Solvers (Algorithms)**.
 
 ```mermaid
 classDiagram
@@ -90,9 +147,9 @@ classDiagram
 
 ---
 
-## 🔌 Pluggable Architecture & Modularity
+## 🧩 Pluggable Code Usage Examples
 
-This framework is built to be completely pluggable. Swap algorithms, heuristics, or domains by modifying a single line of code in your demos or benchmarking scripts.
+This Lab is built to be completely pluggable. Swap algorithms, heuristics, or domains by modifying a single line of code in your demos or benchmarking scripts.
 
 ### 1. Swapping Classical Search Algorithms
 Swapping search algorithms requires zero changes to the domain itself. Just pass the problem instance to a different solver class:
@@ -174,73 +231,147 @@ action = agent_minimax.get_best_action(state)
 
 ---
 
-## 📊 Constraint Satisfaction Benchmarks
+## 📊 Benchmark Tables & Empirical Evaluation (30-Run Averages)
 
-The effectiveness of these heuristics and inference engines is demonstrated in the table below:
+For an in-depth qualitative and quantitative breakdown, see the full [Benchmark Analysis Report](reports/benchmark_report.md).
 
-| Problem      | BT (Naive)           | BT + MRV             | BT + FC              | BT + MAC (AC-3)      | Min-Conflicts        |
-|--------------|----------------------|----------------------|----------------------|----------------------|----------------------|
-| Map Coloring | 11 nodes (0.0003s)   | 11 nodes (0.0002s)   | 7 nodes (0.0002s)    | 7 nodes (0.0003s)    | 10 steps (0.0002s)   |
-| 8-Queens     | 876 nodes (0.0061s)  | 876 nodes (0.0062s)  | 88 nodes (0.0036s)   | 20 nodes (0.0042s)   | 42 steps (0.0024s)   |
-| Sudoku Easy  | HANGS FOREVER        | 1637 nodes (0.1298s) | 489 nodes (0.2555s)  | 402 nodes (0.3400s)  | N/A (Too dense)      |
-| Sudoku Hard  | HANGS FOREVER        | HANGS FOREVER        | 5587 nodes (2.7933s) | 1768 nodes (2.3466s) | N/A (Too dense)      |
+### 1. N-Puzzle Performance (8-Puzzle & 15-Puzzle Disjoint Pattern Database Heuristics)
 
----
+![8-Puzzle Expansion](reports/figures/search_nodes_expanded.png)
+![8-Puzzle Runtime](reports/figures/search_runtime_comparison.png)
+![8-Puzzle All Difficulties](reports/figures/8puzzle_all_instances.png)
 
-## 📊 Classical & Informed Search Benchmarks
+| Algorithm | Heuristic Used | Instance | Success Rate | Path Cost | Nodes Expanded | Nodes Generated | Runtime (ms) | Max Frontier |
+|---|---|---|---|---|---|---|---|---|
+| **DFS** | None | 8pzl easy | 100% | 2.0 | 3 | 4 | 0.026ms | 3 |
+| **BFS** | None | 8pzl easy | 100% | 2.0 | 7 | 13 | 0.059ms | 8 |
+| **UCS** | Uniform Cost | 8pzl easy | 100% | 294.0 | 181,204 | 181,439 | 2312.86ms | 42,946 |
+| **IDDFS** | None | 8pzl easy | 100% | 2.0 | 3 | 4 | 0.562ms | 3 |
+| **Bidir-Search** | None | 8pzl easy | 100% | 0.0 | 5 | 8 | 0.035ms | 6 |
+| **GBFS** | Disjoint PDB | 8pzl easy | 100% | 2.0 | 3 | 5 | 0.061ms | 4 |
+| **A\* + PDB** | Disjoint PDB | 8pzl easy | 100% | 2.0 | 3 | 4 | 0.070ms | 3 |
+| **IDA\* + PDB** | Disjoint PDB | 8pzl easy | 100% | 2.0 | 2 | 3 | 0.059ms | 3 |
+| **BFS** | None | 8pzl medium | 100% | 10.0 | 664 | 1,051 | 3.752ms | 389 |
+| **IDDFS** | None | 8pzl medium | 100% | 10.0 | 127 | 205 | 2.512ms | 42 |
+| **A\* + PDB** | Disjoint PDB | 8pzl medium | 100% | 10.0 | 11 | 18 | 0.199ms | 9 |
+| **IDA\* + PDB** | Disjoint PDB | 8pzl medium | 100% | 10.0 | 10 | 12 | 0.169ms | 12 |
+| **A\* + PDB** | Disjoint PDB | 15pzl medium | 100% | 7.0 | 8 | 16 | 1.434ms | 10 |
+| **IDA\* + PDB** | Disjoint PDB | 15pzl medium | 100% | 7.0 | 7 | 8 | 1.416ms | 8 |
+| **A\* + PDB** | Disjoint PDB | 15pzl hard | 100% | 19.0 | 23 | 50 | 2.135ms | 29 |
+| **IDA\* + PDB** | Disjoint PDB | 15pzl hard | 100% | 19.0 | 26 | 30 | 1.948ms | 24 |
+| **RBFS + PDB** | Disjoint PDB | 15pzl hard | 100% | 19.0 | 29 | 96 | 1.772ms | 4 |
+| **SMA*(1000)** | Disjoint PDB | 15pzl hard | 100% | 19.0 | 40 | 41 | 3.171ms | 31 |
+| **Bidir-A\*** | Disjoint PDB | 15pzl hard | 100% | 19.0 | 2,022 | 4,139 | 87.833ms | 2,119 |
+| **GBFS** | Disjoint PDB | 15pzl hard | 100% | 63.0 | 141 | 309 | 9.384ms | 170 |
 
-The table below summarizes node expansions and execution runtimes for various search algorithms on N-Puzzle and Maze domains (parsed from `results/search_benchmark.csv`):
-
-### 1. N-Puzzle Performance (8-Puzzle & 15-Puzzle)
-
-| Problem Instance | BFS (Nodes / Time) | IDDFS (Nodes / Time) | A* + PDB (Nodes / Time) | IDA* + PDB (Nodes / Time) | Bidir A* (Nodes / Time) |
-|------------------|--------------------|----------------------|-------------------------|---------------------------|-------------------------|
-| **8-Puzzle Med** | 664 / 0.009s       | 127 / 0.001s         | 11 / 0.0003s            | 10 / 0.0002s              | 36 / 0.0011s            |
-| **8-Puzzle Hard**| 3,505 / 0.032s     | 19,955 / 0.166s      | 16 / 0.0006s            | 15 / 0.0005s              | 104 / 0.0077s           |
-| **15-Puzzle Hard**| N/A (Memory Limit)| N/A (Time Limit)      | 23 / 0.0021s            | 26 / 0.0017s              | 2,022 / 0.1775s         |
-
-### 2. Maze Solving Performance (Grid Pathfinding)
-
-| Maze Size   | BFS (Nodes / Time) | UCS/Dijkstra (Nodes / Time) | A* (Nodes / Time) | IDA* (Nodes / Time) | Bidir A* (Nodes / Time) |
-|-------------|--------------------|-----------------------------|-------------------|---------------------|-------------------------|
-| **10×10**   | 95 / 0.0008s       | 49 / 0.0005s                | 32 / 0.0005s      | 31 / 0.0004s        | 50 / 0.0007s            |
-| **30×30**   | 881 / 0.0076s      | 395 / 0.0059s               | 617 / 0.0102s     | 4,541 / 0.0529s     | 305 / 0.0049s           |
-| **50×50**   | 2,473 / 0.0389s    | 1,343 / 0.0385s             | 2,390 / 0.1066s    | 56,073 / 1.2256s    | 1,049 / 0.0339s         |
-
-### Key Takeaways:
-* **The Power of Pattern Databases (PDB)**: Using a precomputed Pattern Database heuristic in the 8-puzzle and 15-puzzle reduces node expansions by up to **99.9%** (e.g. A* solves the hard 8-puzzle in just 16 node expansions, compared to 3,505 for BFS).
-* **Memory-Optimized IDA***: IDA* maintains $O(bd)$ space complexity while performing almost identically to A* in terms of path cost and node expansions.
-* **Bidirectional A* Savings**: In grid pathfinding (Mazes), Bidirectional A* consistently outperforms standard A* on larger dimensions (e.g., in a 50×50 maze, Bidirectional A* is **3x faster** and expands only **1,049 nodes** compared to A*'s **2,390 nodes**).
+![15-Puzzle Informed Search](reports/figures/puzzles_15_comparison.png)
+![15-Puzzle All Difficulties](reports/figures/15puzzle_all_instances.png)
 
 ---
 
-## 🚀 Quick Start & Run Instructions
+### 2. Maze Pathfinding Performance (Manhattan Heuristics across 10×10, 30×30, and 50×50 Grids)
+
+![Maze ALL Search Algorithms](reports/figures/maze_all_algos_comparison.png)
+![Maze Grid Scaling](reports/figures/maze_scaling_comparison.png)
+![Maze Runtime Scaling](reports/figures/maze_runtime_scaling.png)
+
+| Algorithm | Heuristic Used | Instance | Success Rate | Path Cost | Nodes Expanded | Nodes Generated | Runtime (ms) | Max Frontier |
+|---|---|---|---|---|---|---|---|---|
+| **GBFS** | Manhattan | maze 10x10 | 100% | 20.0 | 28 | 40 | 0.394ms | 14 |
+| **A\*** | Manhattan | maze 10x10 | 100% | 20.0 | 30 | 39 | 0.470ms | 11 |
+| **DFS** | None | maze 10x10 | 100% | 20.0 | 71 | 72 | 1.004ms | 7 |
+| **BFS** | None | maze 10x10 | 100% | 20.0 | 83 | 84 | 0.553ms | 10 |
+| **GBFS** | Manhattan | maze 30x30 | 100% | 110.0 | 603 | 645 | 3.093ms | 44 |
+| **UCS** | Uniform Cost | maze 30x30 | 100% | 110.0 | 595 | 637 | 4.112ms | 44 |
+| **A\*** | Manhattan | maze 30x30 | 100% | 110.0 | 851 | 862 | 6.091ms | 38 |
+| **GBFS** | Manhattan | maze 50x50 | 100% | 148.0 | 316 | 391 | 42.222ms | 78 |
+| **UCS** | Uniform Cost | maze 50x50 | 100% | 148.0 | 1,076 | 1,142 | 45.321ms | 69 |
+| **A\*** | Manhattan | maze 50x50 | 100% | 148.0 | 1,157 | 1,208 | 43.132ms | 54 |
+| **Bidir-Search** | None | maze 50x50 | 100% | 0.0 | 1,439 | 1,481 | 44.737ms | 53 |
+| **DFS** | None | maze 50x50 | 100% | 148.0 | 1,573 | 1,604 | 45.339ms | 50 |
+| **IDDFS** | None | maze 50x50 | 100% | 148.0 | 1,924 | 1,942 | 43.379ms | 35 |
+| **BFS** | None | maze 50x50 | 100% | 148.0 | 2,250 | 2,268 | 42.836ms | 44 |
+| **Bidir-A\*** | Manhattan | maze 50x50 | 100% | 148.0 | 1,304 | 1,344 | 82.726ms | 49 |
+| **IDA\*** | Manhattan | maze 50x50 | 100% | 148.0 | 12,375 | 12,412 | 134.795ms | 210 |
+
+*\*Note 1: The `OptimizedIDDFS` implementation is not a true IDDFS — it retains frontier nodes from previous depth iterations (cutoff nodes are kept and re-expanded at increased depth limits) rather than restarting from scratch each time. This makes it more efficient in practice but deviates from the textbook algorithm.*
+
+*\*Note 2 (5.0s Timeout Safeguard): Memory-bounded algorithms (`RBFS` and `SMA*(1000)`) on 30×30 and 50×50 mazes constantly prune and regenerate nodes under memory constraints, causing heavy computational overhead on dense 2D grid graphs. The benchmark engine enforces a 5.0-second execution time limit per run. Runs exceeding 5.0s automatically time out (`success=False`, `0` nodes expanded recorded), explaining why RBFS and SMA* show 0 / timeout status on 30×30 and 50×50 mazes.*
+
+---
+
+### 3. Local Search & Optimization Comparison (TSP & N-Queens)
+
+![Local Search TSP](reports/figures/local_search_comparison.png)
+![Local Search N-Queens](reports/figures/nqueens_local_comparison.png)
+
+| Algorithm | Domain | Success / Value | Nodes Expanded | Runtime (ms) | Key Hyperparameters |
+|---|---|---|---|---|---|
+| **Hill Climbing** | TSP (20 Cities) | Tour = 3.18 | 19 | 6.484ms | 2-Opt Neighborhood |
+| **Simulated Annealing** | TSP (20 Cities) | Tour = 3.21 | 883 | 21.164ms | T_0=1000, alpha=0.995 |
+| **Local Beam Search** | TSP (20 Cities) | Tour = 3.18 | 70 | 28.939ms | Beam width k=5 |
+| **Genetic Algorithm** | TSP (20 Cities) | Tour = 3.18 | 14,400 | 164.461ms | OX1 Crossover, 2-Opt Mut |
+| **Hill Climbing** | 8-Queens | 100% (Score 26.0) | 4 | 0.977ms | Restart on local minima |
+| **Simulated Annealing** | 8-Queens | 100% (Score 27.73) | 215 | 8.304ms | T_0=500, alpha=0.99 |
+| **Local Beam Search** | 8-Queens | 100% (Score 27.43) | 20 | 5.063ms | Beam width k=5 |
+| **Genetic Algorithm** | 8-Queens | 100% (Score 27.43) | 14,400 | 145.934ms | Single-point Crossover |
+
+---
+
+### 4. Constraint Satisfaction Problems (CSP Pruning & Runtime)
+
+![CSP Benchmark Summary](reports/figures/csp_benchmark_summary.png)
+![CSP Runtime](reports/figures/csp_runtime_summary.png)
+
+| Problem | BT (Naive) | BT + MRV | BT + FC | BT + MAC (AC-3) | Min-Conflicts |
+|---|---|---|---|---|---|
+| **Map Coloring** | 11 nodes (0.1ms) | 11 nodes (0.1ms) | 7 nodes (0.1ms) | 7 nodes (0.1ms) | 10 steps (0.1ms) |
+| **8-Queens** | 876 nodes (3.2ms) | 876 nodes (3.0ms) | 88 nodes (1.6ms) | 20 nodes (1.9ms) | 22 steps (1.5ms) |
+| **Sudoku Easy** | HANGS FOREVER | 1,637 nodes (68.8ms) | 489 nodes (123.5ms) | 402 nodes (198.2ms) | N/A (Too dense) |
+| **Sudoku Hard** | HANGS FOREVER | HANGS FOREVER | 5,587 nodes (1394.8ms) | 1,768 nodes (1231.9ms) | N/A (Too dense) |
+
+---
+
+### 5. Adversarial Game Tournament Results (30-Run Matchups)
+
+![Game Tournament Win Rates](reports/figures/game_tournament_winrates.png)
+
+| Game | Matchup (P1 vs P2) | P1 Wins | P2 Wins | Draws | Avg Game Time (ms) |
+|---|---|---|---|---|---|
+| **Tic-Tac-Toe** | AlphaBeta vs MCTS(n=30) | 23 (76.7%) | 0 | 7 | 57.2ms |
+| **Tic-Tac-Toe** | AlphaBeta vs Random | 30 (100%) | 0 | 0 | 57.6ms |
+| **Tic-Tac-Toe** | MCTS(n=30) vs Random | 28 (93.3%) | 0 | 2 | 2.1ms |
+| **Connect Four** | AlphaBeta(d=4) vs MCTS(n=30) | 22 (73.3%) | 7 | 1 | 58.7ms |
+| **Connect Four** | AlphaBeta(d=4) vs Random | 30 (100%) | 0 | 0 | 10.4ms |
+| **Connect Four** | MCTS(n=30) vs Random | 30 (100%) | 0 | 0 | 30.2ms |
+| **Crazy Card Game** | Obssa Heuristic vs MCTS(n=30) | 19 (63.3%) | 11 | 0 | 575.7ms |
+| **Crazy Card Game** | Obssa Heuristic vs Random | 26 (86.7%) | 4 | 0 | 3.8ms |
+| **Crazy Card Game** | MCTS(n=30) vs Random | 21 (70.0%) | 9 | 0 | 959.6ms |
+
+*\*Note (Game Tournament Move Capping & Evaluation Function): Games in the adversarial tournament are capped at **100 turns (`max_moves = 100`)** to prevent infinite draw loops (e.g. repetitive card drawing in Crazy Card Game). When a game reaches 100 turns without a player emptying their hand, the match terminates early, and the game state is evaluated using the domain's evaluation function (`state.get_utility(p1_id)`), scoring remaining hand size differences, held wildcards, and penalty cards to determine the winner or declare a draw.*
+
+---
+
+## 🚀 Quick Start & Commands
 
 ### Setup Environment
-Make sure you have Python 3.10+ and pygame installed:
 ```bash
 pip install -r requirements.txt
 ```
 
-### Running the Visualizers & Demos
-Interactive visualizers are available to watch search paths and games dynamically.
+### Run Unified Interactive Hub
+```bash
+python main.py
+```
 
-1. **Crazy Card Game (Visualizer & Playable Demo)**:
-   * Play against a strategic AI with wildcard suit changes, penalty card counters, and automatic turn transitions.
-   ```bash
-   python demo/crazy_demo.py
-   ```
-2. **N-Puzzle (8-Puzzle / 15-Puzzle Solver Visualizer)**:
-   ```bash
-   python visualization/PuzzleVisualizer.py
-   ```
-3. **Maze Domain Solver Visualizer**:
-   ```bash
-   python visualization/MazeVisualizer.py
-   ```
+### Run Automated Benchmarks & Reports
+```bash
+python benchmarks/run_all_benchmarks.py --runs 30
+python benchmarks/generate_report.py
+```
 
-### Running Unit Tests
-We maintain 75+ unit tests checking every search algorithm, optimization routine, CSP heuristic, and the complete Crazy card game ruleset:
+### Run Unit Tests
+We maintain 80+ unit tests covering all search algorithms, CSP heuristics, optimization routines, and card game rules:
 ```bash
 python -m pytest -v
 ```
