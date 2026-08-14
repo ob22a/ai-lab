@@ -55,9 +55,9 @@ def main(num_runs=30, domains=None, algo_filter=None, reset=False):
 
     if "tsp" in domains:
         print(f"\n=== Running TSP Optimization Benchmark ({num_runs} runs) ===")
-        tsp_prob = make_tsp_problem(20)
+        tsp_probs = [make_tsp_problem(20) for _ in range(num_runs)]
         tsp_entries = [
-            BenchmarkEntry(label=f"{name} / TSP (20 Cities)", algo_class=cls, problem=tsp_prob, algo_kwargs=kw)
+            BenchmarkEntry(label=f"{name} / TSP (20 Cities)", algo_class=cls, problem=tsp_probs, algo_kwargs=kw)
             for name, cls, kw in algos
         ]
         Benchmark(tsp_entries).run(
@@ -70,9 +70,9 @@ def main(num_runs=30, domains=None, algo_filter=None, reset=False):
 
     if "nqueens" in domains:
         print(f"\n=== Running N-Queens Local Search Benchmark ({num_runs} runs) ===")
-        nq_prob = make_nqueens_problem(8)
+        nq_probs = [make_nqueens_problem(8) for _ in range(num_runs)]
         nq_entries = [
-            BenchmarkEntry(label=f"{name} / 8-Queens", algo_class=cls, problem=nq_prob, algo_kwargs=kw)
+            BenchmarkEntry(label=f"{name} / 8-Queens", algo_class=cls, problem=nq_probs, algo_kwargs=kw)
             for name, cls, kw in algos
         ]
         Benchmark(nq_entries).run(

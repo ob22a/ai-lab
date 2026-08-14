@@ -14,6 +14,7 @@ import copy
 import math
 import multiprocessing
 import os
+import sys
 import time
 from collections import defaultdict
 from dataclasses import dataclass, field
@@ -21,6 +22,9 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
 from core.result import Result
+
+# Increase recursion limit to allow pickling very deep Node paths (e.g. 50x50 mazes)
+sys.setrecursionlimit(10000)
 
 RAW_COLUMNS = [
     "Label", "Run#", "Success", "Path Cost",
@@ -67,18 +71,19 @@ def _worker(algo_class: type, problem: Any, algo_kwargs: dict, result_queue: mul
         elapsed = time.perf_counter() - t0
         if res:
             res.runtime = elapsed
+            res.solution = None  # Prevent RecursionError when pickling deep Node chains
         result_queue.put(("ok", res))
     except Exception as exc:
         result_queue.put(("error", str(exc)))
 
 
-def _run_single_entry(entry: BenchmarkEntry, timeout: float) -> Tuple[Optional[Result], float]:
+def _run_single_entry(algo_class: type, problem: Any, algo_kwargs: dict, timeout: float) -> Tuple[Optional[Result], float]:
     """Run one benchmark entry in a child process with a hard timeout."""
     ctx = multiprocessing.get_context("spawn")
     result_queue: multiprocessing.Queue = ctx.Queue()
     process = ctx.Process(
         target=_worker,
-        args=(entry.algo_class, entry.problem, entry.algo_kwargs or {}, result_queue),
+        args=(algo_class, problem, algo_kwargs or {}, result_queue),
     )
     process.start()
     process.join(timeout)
@@ -221,7 +226,8 @@ class Benchmark:
             last_result: Optional[Result] = None
 
             for r in range(actual_runs):
-                res, elapsed = _run_single_entry(entry, timeout)
+                prob = entry.problem[r] if isinstance(entry.problem, list) else entry.problem
+                res, elapsed = _run_single_entry(entry.algo_class, prob, entry.algo_kwargs, timeout)
                 if res is None:
                     res = Result(success=False, runtime=timeout)
                     elapsed = timeout

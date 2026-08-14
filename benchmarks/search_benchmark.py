@@ -47,7 +47,7 @@ UNINFORMED = [
     ("DFS",           DFS,                 {}),
     ("BFS",           BFS,                 {}),
     ("UCS",           UCS,                 {}),
-    ("IDDFS",         IDDFS,               {"visualize": False, "max_depth": 20}),
+    ("IDDFS",         IDDFS,               {"visualize": False, "max_height": 20}),
     ("Bidir-Search",  BidirectionalSearch, {}),
 ]
 
@@ -110,19 +110,19 @@ def main(num_runs=30, domains=None, algo_filter=None, reset=False):
         print(f"\n=== Running 8-Puzzle Benchmark ({num_runs} runs) ===")
         p8_entries = []
         for diff_label, moves, algos, h_type in [
-            ("8pzl easy", 8, filtered, "misplaced"),
+            ("8pzl easy", 8, filtered, "misplaced_tile"),
             ("8pzl medium", 18, filtered, "pattern_db"),
             ("8pzl hard", 28, _filter_algos(INFORMED_WITH_IGBFS, algo_filter), "pattern_db"),
         ]:
-            base_prob = make_8puzzle(gen_8, moves, pdb_8, heuristic_type=h_type)
+            base_probs = [make_8puzzle(gen_8, moves, pdb_8, heuristic_type=h_type) for _ in range(num_runs)]
             for name, cls, kwargs in algos:
-                p8_entries.append(BenchmarkEntry(label=f"{name} / {diff_label}", algo_class=cls, problem=base_prob, algo_kwargs=kwargs))
+                p8_entries.append(BenchmarkEntry(label=f"{name} / {diff_label}", algo_class=cls, problem=base_probs, algo_kwargs=kwargs))
 
         # Heuristic comparison on 8-puzzle medium
-        for h in ("misplaced", "manhattan", "pattern_db"):
-            prob = make_8puzzle(gen_8, 18, pdb_8, heuristic_type=h)
+        for h in ("misplaced_tile", "manhattan", "pattern_db"):
+            probs = [make_8puzzle(gen_8, 18, pdb_8, heuristic_type=h) for _ in range(num_runs)]
             for name, cls, kwargs in _filter_algos([("A*", AStar, {}), ("IDA*", IDAStar, {})], algo_filter):
-                p8_entries.append(BenchmarkEntry(label=f"{name} ({h}) / 8pzl medium", algo_class=cls, problem=prob, algo_kwargs=kwargs))
+                p8_entries.append(BenchmarkEntry(label=f"{name} ({h}) / 8pzl medium", algo_class=cls, problem=probs, algo_kwargs=kwargs))
 
         Benchmark(p8_entries).run(
             csv_path="results/search_8puzzle.csv",
@@ -137,9 +137,9 @@ def main(num_runs=30, domains=None, algo_filter=None, reset=False):
         print(f"\n=== Running 15-Puzzle Benchmark ({num_runs} runs) ===")
         p15_entries = []
         for diff_label, moves in [("15pzl medium", 25), ("15pzl hard", 45)]:
-            base_prob = make_15puzzle(gen_15, moves, pdb_15)
+            base_probs = [make_15puzzle(gen_15, moves, pdb_15) for _ in range(num_runs)]
             for name, cls, kwargs in _filter_algos(INFORMED_WITH_IGBFS, algo_filter):
-                p15_entries.append(BenchmarkEntry(label=f"{name} / {diff_label}", algo_class=cls, problem=base_prob, algo_kwargs=kwargs))
+                p15_entries.append(BenchmarkEntry(label=f"{name} / {diff_label}", algo_class=cls, problem=base_probs, algo_kwargs=kwargs))
         Benchmark(p15_entries).run(
             csv_path="results/search_15puzzle.csv",
             num_runs=num_runs,
@@ -152,14 +152,14 @@ def main(num_runs=30, domains=None, algo_filter=None, reset=False):
     if "maze" in domains:
         print(f"\n=== Running Maze Benchmark ({num_runs} runs) ===")
         maze_entries = []
-        for rows, cols in [(10, 10), (30, 30), (50, 50)]:
-            base_prob = make_maze(rows, cols)
-            for name, cls, kwargs in filtered:
-                maze_entries.append(BenchmarkEntry(label=f"{name} / maze {rows}x{cols}", algo_class=cls, problem=base_prob, algo_kwargs=kwargs))
+        for diff_label, rows, cols in [("maze 10x10", 10, 10), ("maze 30x30", 30, 30), ("maze 50x50", 50, 50)]:
+            base_probs = [make_maze(rows, cols) for _ in range(num_runs)]
+            for name, cls, kwargs in _filter_algos(ALL_ALGOS, algo_filter):
+                maze_entries.append(BenchmarkEntry(label=f"{name} / {diff_label}", algo_class=cls, problem=base_probs, algo_kwargs=kwargs))
 
         # Maze heuristic comparison on 30x30
         for h_label, h_type in [("manhattan", "Manhatten"), ("euclidean", "Euclidean")]:
-            prob = make_maze(30, 30, heuristic_type=h_type)
+            prob = [make_maze(30, 30, heuristic_type=h_type) for _ in range(num_runs)]
             for name, cls, kwargs in _filter_algos([("A*", AStar, {})], algo_filter):
                 maze_entries.append(BenchmarkEntry(label=f"{name} ({h_label}) / maze 30x30", algo_class=cls, problem=prob, algo_kwargs=kwargs))
 

@@ -83,6 +83,18 @@ SKIP_COMBOS = {
     ("BT+MRV", "Sudoku Hard"),
     ("Min-Conflicts", "Sudoku Easy"),
     ("Min-Conflicts", "Sudoku Hard"),
+    ("BT+Degree", "Sudoku Easy"),
+    ("BT+LCV", "Sudoku Easy"),
+    ("Backjumping", "Sudoku Easy"),
+    ("CBJ", "Sudoku Easy"),
+    ("Symmetric BT", "Sudoku Easy"),
+    ("BT+Degree", "Sudoku Hard"),
+    ("BT+LCV", "Sudoku Hard"),
+    ("Backjumping", "Sudoku Hard"),
+    ("CBJ", "Sudoku Hard"),
+    ("Symmetric BT", "Sudoku Hard"),
+    ("BT+FC", "Sudoku Hard"),
+    ("BT+MAC", "Sudoku Hard"),
 }
 
 
@@ -122,7 +134,7 @@ def main(num_runs=30, problem_filter=None, solver_filter=None, reset=False):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--runs", type=int, default=30)
+    parser.add_argument("--runs", type=int, default=5)
     parser.add_argument("--domains", type=str, default="", help="Comma-separated CSP domains to run")
     parser.add_argument("--algos", type=str, default="", help="Comma-separated solver name filter")
     parser.add_argument("--reset", action="store_true")

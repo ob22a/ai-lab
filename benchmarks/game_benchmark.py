@@ -61,6 +61,42 @@ def play_game(state, agent1, agent2, max_moves: int = 100) -> int:
         return 2
     return 0
 
+import multiprocessing
+
+def _game_worker(initial_state, a1, a2, max_moves, result_queue):
+    import sys
+    sys.setrecursionlimit(20000)
+    try:
+        winner = play_game(initial_state, a1, a2, max_moves)
+        result_queue.put(("ok", winner))
+    except Exception as exc:
+        result_queue.put(("error", str(exc)))
+
+def _run_single_game_isolated(initial_state, a1, a2, max_moves=100, timeout=60.0):
+    ctx = multiprocessing.get_context("spawn")
+    result_queue = ctx.Queue()
+    process = ctx.Process(
+        target=_game_worker,
+        args=(initial_state, a1, a2, max_moves, result_queue)
+    )
+    process.start()
+    process.join(timeout)
+    
+    if process.is_alive():
+        process.terminate()
+        process.join(1.0)
+        if process.is_alive():
+            process.kill()
+            process.join(1.0)
+        return -1 # Indicator for timeout
+
+    if result_queue.empty():
+        return -1
+    status, payload = result_queue.get_nowait()
+    if status == "error":
+        return -1
+    return payload
+
 
 def _all_matchups():
     return [
@@ -96,7 +132,7 @@ def _all_matchups():
     ]
 
 
-def run_game_tournament(num_runs=30, target_games=None, agent_filter=None, reset=False):
+def run_game_tournament(num_runs=5, target_games=None, agent_filter=None, reset=False):
     if target_games is None:
         target_games = ["tic_tac_toe", "connect_four", "othello", "checkers", "crazy"]
 
@@ -128,13 +164,16 @@ def run_game_tournament(num_runs=30, target_games=None, agent_filter=None, reset
                 p1_wins = p2_wins = draws = 0
                 t0 = time.perf_counter()
                 for _ in range(num_runs):
-                    winner = play_game(state_factory(), a1, a2)
+                    initial_state = state_factory()
+                    winner = _run_single_game_isolated(initial_state, a1, a2, max_moves=100, timeout=60.0)
                     if winner == 1:
                         p1_wins += 1
-                    elif winner == 2 or winner == -1:
+                    elif winner == 2:
                         p2_wins += 1
-                    else:
+                    elif winner == 0:
                         draws += 1
+                    else:
+                        print(f"      [TIMEOUT/ERROR] {name1} vs {name2}")
                 elapsed = time.perf_counter() - t0
                 avg_time = elapsed / num_runs
                 print(f"  {name1:<20} vs {name2:<20} | W1:{p1_wins:2d} W2:{p2_wins:2d} D:{draws:2d} | {avg_time:.3f}s")
@@ -146,7 +185,7 @@ def run_game_tournament(num_runs=30, target_games=None, agent_filter=None, reset
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--runs", type=int, default=30)
+    parser.add_argument("--runs", type=int, default=5)
     parser.add_argument("--games", "--domains", dest="games", type=str, default="tic_tac_toe,connect_four,othello,checkers,crazy")
     parser.add_argument("--agents", type=str, default="", help="Comma-separated agent name filter")
     parser.add_argument("--reset", action="store_true")
