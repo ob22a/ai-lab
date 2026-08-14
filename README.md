@@ -1,4 +1,4 @@
-# 🚀 Advanced Agentic AI Framework & Interactive Lab
+# 🚀 Classical AI Algorithms Framework & Interactive Lab
 
 A state-of-the-art, highly modular Object-Oriented AI framework implemented from scratch in Python. Crafted specifically for **Visual Learners**, researchers, and developers, this repository provides unified abstractions, pluggable solver engines, 100% transparent visualizers, automated benchmarking pipelines, and an interactive **CLI Launcher** (`main.py`) across a vast array of artificial intelligence paradigms.
 
@@ -80,9 +80,13 @@ python main.py
 |:---:|:---:|
 | ![Crazy Card Game](screenshots/crazy_card_game.png) | ![Othello Reversi](screenshots/othello.png) |
 
-| Connect Four (Alpha-Beta Search) | Tic-Tac-Toe (Minimax Search) |
+| Connect Four (Alpha-Beta Search) | Checkers (Minimax & Alpha-Beta Search) |
 |:---:|:---:|
-| ![Connect Four](screenshots/connect_four.png) | ![Tic-Tac-Toe](screenshots/tic-tac-toe.png) |
+| ![Connect Four](screenshots/connect_four.png) | ![Checkers](screenshots/checkers.png) |
+
+| Crazy Card Game (Information Set MCTS) | Tic-Tac-Toe (Minimax Search) |
+|:---:|:---:|
+| ![Crazy Card Game](screenshots/crazy_card_game.png) | ![Tic-Tac-Toe](screenshots/tic-tac-toe.png) |
 
 ---
 
